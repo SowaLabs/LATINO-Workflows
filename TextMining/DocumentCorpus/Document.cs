@@ -655,18 +655,23 @@ namespace Latino.Workflows.TextMining
         public void WriteXmlCompressed(string fileName)
         {
             Utils.ThrowException(!Utils.VerifyFileNameCreate(fileName) ? new ArgumentValueException("fileName") : null);
-            XmlWriterSettings xmlSettings = new XmlWriterSettings();
-            xmlSettings.Indent = true;
-            xmlSettings.IndentChars = "\t";
-            xmlSettings.CheckCharacters = false;
             using (FileStream stream = new FileStream(fileName, FileMode.Create))
             {
-                using (GZipStream gzStream = new GZipStream(stream, CompressionMode.Compress))
+                WriteXmlCompressed(stream);
+            }
+        }
+
+        public void WriteXmlCompressed(Stream outStream)
+        {
+            using (GZipStream gzStream = new GZipStream(outStream, CompressionMode.Compress))
+            {
+                XmlWriterSettings xmlSettings = new XmlWriterSettings();
+                xmlSettings.Indent = true;
+                xmlSettings.IndentChars = "\t";
+                xmlSettings.CheckCharacters = false;
+                using (XmlWriter xmlWriter = XmlWriter.Create(gzStream, xmlSettings))
                 {
-                    using (XmlWriter xmlWriter = XmlWriter.Create(gzStream, xmlSettings))
-                    {
-                        WriteXml(xmlWriter, /*writeTopElement=*/true);
-                    }
+                    WriteXml(xmlWriter, /*writeTopElement=*/true);
                 }
             }
         }
@@ -674,16 +679,21 @@ namespace Latino.Workflows.TextMining
         public void ReadXmlCompressed(string fileName)
         {
             Utils.ThrowException(!Utils.VerifyFileNameOpen(fileName) ? new ArgumentValueException("fileName") : null);
-            XmlReaderSettings xmlSettings = new XmlReaderSettings();
-            xmlSettings.CheckCharacters = false;
             using (FileStream stream = new FileStream(fileName, FileMode.Open))
             {
-                using (GZipStream gzStream = new GZipStream(stream, CompressionMode.Decompress))
+                ReadXmlCompressed(stream);
+            }
+        }
+
+        public void ReadXmlCompressed(Stream inStream)
+        {
+            using (GZipStream gzStream = new GZipStream(inStream, CompressionMode.Decompress))
+            {
+                XmlReaderSettings xmlSettings = new XmlReaderSettings();
+                xmlSettings.CheckCharacters = false;
+                using (XmlReader xmlReader = XmlReader.Create(gzStream, xmlSettings))
                 {
-                    using (XmlTextReader xmlReader = new XmlTextReader(gzStream))
-                    {
-                        ReadXml(xmlReader);
-                    }
+                    ReadXml(xmlReader);
                 }
             }
         }
