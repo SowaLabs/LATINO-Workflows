@@ -16,16 +16,13 @@ using System.Xml;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
 using System.Net;
 using System.Threading;
-using System.Data.OleDb;
 using System.Data;
+using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 using Latino.Web;
-using Latino.Persistance;
 using Latino.Workflows.TextMining;
-using System.Data.SqlClient;
 
 namespace Latino.Workflows.WebMining
 {
@@ -191,16 +188,12 @@ namespace Latino.Workflows.WebMining
             get { return mSiteId; }
         }
 
-        public void Initialize(string dbConnectionString)
-        {
-            Utils.ThrowException(dbConnectionString == null ? new ArgumentNullException("dbConnectionString") : null);
-            mDbConnectionString = dbConnectionString;
-            Initialize();
-        }
-
         public void Initialize()
         {
-            mHistory.Load(mSiteId, mDbConnectionString);
+            if (mDbConnectionString != null)
+            {
+                mHistory.Load(mSiteId, mDbConnectionString);
+            }
         }
 
         private static Guid MakeGuid(string title, string desc, string pubDate)
@@ -227,36 +220,6 @@ namespace Latino.Workflows.WebMining
                 itemAttr.TryGetValue("pubDate", out pubDate);
                 Guid guid = MakeGuid(name, desc, pubDate);
                 mLogger.Info("ProcessItem", "Found item \"{0}\".", Utils.ToOneLine(name, /*compact=*/true));
-                if (mDbConnectionString != null)
-                {
-                    string xmlHash = Utils.GetHashCode128(xml).ToString("N");
-                    string category = null;
-                    itemAttr.TryGetValue("category", out category);
-                    string entities = null;
-                    itemAttr.TryGetValue("emm:entity", out entities);
-                    using (SqlConnection connection = new SqlConnection(mDbConnectionString))
-                    {
-                        connection.Open();
-                        using (SqlCommand cmd = new SqlCommand("insert into Sources (siteId, docId, sourceUrl, category, entities, xmlHash) values (@siteId, @docId, @sourceUrl, @category, @entities, @xmlHash)", connection))
-                        {
-                            WorkflowUtils.AssignParamsToCommand(cmd,
-                                "siteId", Utils.Truncate(mSiteId, 100),
-                                "docId", guid.ToString("N"),
-                                "sourceUrl", Utils.Truncate(rssXmlUrl, 400),
-                                "category", category,
-                                "entities", entities,
-                                "xmlHash", xmlHash);
-                            cmd.ExecuteNonQuery();
-                        }
-                        using (SqlCommand cmd = new SqlCommand("insert into RssXml (hash, xml) values (@hash, @xml)", connection))
-                        {
-                            WorkflowUtils.AssignParamsToCommand(cmd,
-                                "hash", xmlHash,
-                                "xml", xml);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                }                
                 if (!mHistory.CheckHistory(guid))
                 {
                     DateTime time = DateTime.Now;
@@ -543,8 +506,9 @@ namespace Latino.Workflows.WebMining
                         DataTable table = new DataTable();
                         if (siteId == null)
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("select top {0} d.id from Documents d, Corpora c where d.corpusId = c.id and c.siteId is null order by time desc", mHistorySize), connection))
-                            { 
+                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} id FROM Documents WHERE siteId IS NULL ORDER BY time DESC", mHistorySize), connection))
+                            {
+                                cmd.CommandTimeout = 0;
                                 using (SqlDataReader reader = cmd.ExecuteReader()) 
                                 { 
                                     table.Load(reader); 
@@ -553,8 +517,9 @@ namespace Latino.Workflows.WebMining
                         }
                         else
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("select top {0} d.id from Documents d, Corpora c where d.corpusId = c.id and c.siteId = @siteId order by time desc", mHistorySize), connection))
+                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} id FROM Documents WHERE siteId = @siteId ORDER BY acqTime DESC", mHistorySize), connection))
                             {
+                                cmd.CommandTimeout = 0;
                                 WorkflowUtils.AssignParamsToCommand(cmd, "siteId", Utils.Truncate(siteId, 400));
                                 using (SqlDataReader reader = cmd.ExecuteReader())
                                 {
@@ -567,7 +532,7 @@ namespace Latino.Workflows.WebMining
                         for (int i = table.Rows.Count - 1; i >= 0; i--)
                         {
                             DataRow row = table.Rows[i];
-                            Guid itemId = new Guid((string)row["id"]);
+                            Guid itemId = (Guid)row["id"];
                             mHistory.First.Add(itemId);
                             mHistory.Second.Enqueue(itemId);
                         }

@@ -65,10 +65,20 @@ namespace Latino.Workflows.Persistance
             return t;
         }
 
+        private static DataTable CreateTextBlocksTable()
+        {
+            DataTable t = new DataTable();
+            t.Columns.Add("docId", typeof(Guid));
+            t.Columns.Add("hashCodes", typeof(byte[]));
+            t.Columns.Add("hashCodesBase64", typeof(string));
+            return t;
+        }
+
         protected override void ConsumeData(IDataProducer sender, object data)
         {
             DocumentCorpus c = (DocumentCorpus)data;
             DataTable dt = CreateTable();
+            DataTable dtTextBlocks = CreateTextBlocksTable();
             foreach (Document doc in c.Documents)
             {
                 Document d = doc.Clone();
@@ -86,10 +96,16 @@ namespace Latino.Workflows.Persistance
                 d.Features.SetFeatureValue("guid", docId.ToString("N"));
                 d.Features.SetFeatureValue("rssUrl", c.Features.GetFeatureValue("sourceUrl"));
                 d.Features.SetFeatureValue("siteId", c.Features.GetFeatureValue("siteId"));
-                // remove boilerplate removal features
+                // remove boilerplate removal features, keep hash codes 
+                ArrayList<ulong> hashCodes = new ArrayList<ulong>();
                 foreach (Annotation annot in d.Annotations)
                 {
-                    if (annot.Type.StartsWith("TextBlock")) { annot.Features.Clear(); }
+                    if (annot.Type.StartsWith("TextBlock")) 
+                    {
+                        ulong hashCode = Convert.ToUInt64(annot.Features.GetFeatureValue("hash"));
+                        hashCodes.Add(hashCode);
+                        annot.Features.Clear(); 
+                    }
                 }
                 // write doc XML
                 if (mXmlDataRoot != null)
@@ -125,7 +141,7 @@ namespace Latino.Workflows.Persistance
                 // prepare for bulk write
                 if (mConnectionString != null) 
                 {
-                    string fileName = string.Format("{0:yyyy}\\{0:MM}\\{0:dd}\\{0:HH}_{0:mm}_{0:ss}_{1:N}.xml.gz", time, docId);
+                    string fileName = string.Format("{0:yyyy}\\{0:MM}\\{0:dd}\\{0:HH}_{0:mm}_{0:ss}_{1:N}.xml.gz", time, docId);                    
                     dt.Rows.Add(
                         new Guid(d.Features.GetFeatureValue("guid")),
                         Utils.Truncate(d.Name, 400),
@@ -149,6 +165,16 @@ namespace Latino.Workflows.Persistance
                         cGuid,
                         dGuid 
                         );
+                    BinarySerializer memSer = new BinarySerializer();
+                    hashCodes.Save(memSer);
+                    byte[] hashCodesBinary = new byte[memSer.Stream.Position];
+                    Array.Copy(((MemoryStream)memSer.Stream).GetBuffer(), hashCodesBinary, hashCodesBinary.Length);
+                    string hashCodesBase64 = Convert.ToBase64String(hashCodesBinary, 0, (int)memSer.Stream.Position); // *** remove this after the transition
+                    dtTextBlocks.Rows.Add(
+                        new Guid(d.Features.GetFeatureValue("guid")),
+                        hashCodesBinary,
+                        hashCodesBase64
+                        );
                 }
             }
             // bulk write to database
@@ -162,6 +188,8 @@ namespace Latino.Workflows.Persistance
                         bulkWriter.BulkCopyTimeout = mCommandTimeout;
                         bulkWriter.DestinationTableName = "Documents";
                         bulkWriter.WriteToServerRetryOnDeadlock(dt);
+                        bulkWriter.DestinationTableName = "TextBlocks";
+                        bulkWriter.WriteToServerRetryOnDeadlock(dtTextBlocks);
                     }
                 }
             }

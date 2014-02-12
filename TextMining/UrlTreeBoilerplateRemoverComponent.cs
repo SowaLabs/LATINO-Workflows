@@ -16,6 +16,7 @@ using System.Data;
 using System.IO;
 using Latino.WebMining;
 using Latino.Persistance;
+using System.Data.SqlClient;
 
 namespace Latino.Workflows.TextMining
 {
@@ -106,22 +107,8 @@ namespace Latino.Workflows.TextMining
         private static int mExactDuplicateThreshold // TODO: make configurable
             = 100 - 1;
 
-        private DatabaseConnection mDbConnection
-            = null;
-
         public UrlTreeBoilerplateRemoverComponent() : base(typeof(UrlTreeBoilerplateRemoverComponent))
         {
-            mBlockSelector = "TextBlock";
-        }
-
-        public UrlTreeBoilerplateRemoverComponent(string dbConnectionString) : base(typeof(UrlTreeBoilerplateRemoverComponent))
-        {
-            if (dbConnectionString != null)
-            {
-                mDbConnection = new DatabaseConnection();
-                mDbConnection.ConnectionString = dbConnectionString;
-                mDbConnection.Connect();
-            }
             mBlockSelector = "TextBlock";
         }
 
@@ -181,63 +168,83 @@ namespace Latino.Workflows.TextMining
             while (entry.mUrlKey != urlKey);
         }
 
-        public static void InitializeHistory(DatabaseConnection dbConnection)
+        public static void InitializeHistory(string dbConnectionString)
         {
             Logger logger = Logger.GetLogger(typeof(UrlTreeBoilerplateRemoverComponent));
             logger.Info("InitializeHistory", "Loading history ...");
             mUrlInfo.Clear();
             mTextBlockInfo.Clear();
-            DataTable domainsTbl = dbConnection.ExecuteQuery(string.Format(@"
-                SELECT DISTINCT domain FROM 
-                (SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY MAX(time) DESC) x 
-                UNION 
-                SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY COUNT(*) DESC) y) z", 3000/*make this configurable!!*/));
             int domainCount = 0;
-            foreach (DataRow row in domainsTbl.Rows)
+            using (SqlConnection dbConnection = new SqlConnection(dbConnectionString))
             {
-                string domainName = (string)row["domain"];
-                DataTable urlInfoTbl = dbConnection.ExecuteQuery(string.Format(@"
-                    SELECT TOP {0} d.id, d.corpusId, d.time, d.responseUrl, d.urlKey, d.rev, d.domain, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.time DESC, dd.rev DESC) AS maxRev, tb.hashCodes FROM Documents d 
-                    INNER JOIN TextBlocks tb ON d.corpusId = tb.corpusId AND d.id = tb.docId WHERE d.domain = ? ORDER BY d.time DESC", mMaxQueueSize), domainName);
-                if (urlInfoTbl.Rows.Count == 0) { continue; }
-                Pair<UrlTree, Queue<TextBlockHistoryEntry>> textBlockInfo = GetTextBlockInfo(domainName);
-                DateTime then = DateTime.Parse((string)urlInfoTbl.Rows[0]["time"]) - new TimeSpan(mHistoryAgeDays, 0, 0, 0);
-                domainCount++;
-                Console.WriteLine("* " + domainName + string.Format(" ({0}/{1})", domainCount, domainsTbl.Rows.Count));
-                Pair<Dictionary<string, Ref<int>>, Queue<UrlHistoryEntry>> urlInfo = GetUrlInfo(domainName);
-                for (int j = urlInfoTbl.Rows.Count - 1; j >= 0; j--)
+                dbConnection.Open();
+                DataTable domainsTbl;
+                using (SqlCommand sqlCmd = new SqlCommand(string.Format(@"
+                    SELECT DISTINCT domain FROM 
+                    (SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY MAX(acqTime) DESC) x 
+                    UNION 
+                    SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY COUNT(*) DESC) y) z
+                    ", 3000/*make this configurable*/), dbConnection))
                 {
-                    int rev = (int)urlInfoTbl.Rows[j]["rev"];
-                    int maxRev = (int)urlInfoTbl.Rows[j]["maxRev"];
-                    string urlKey = (string)urlInfoTbl.Rows[j]["urlKey"];
-                    string timeStr = (string)urlInfoTbl.Rows[j]["time"];
-                    Guid corpusId = new Guid((string)urlInfoTbl.Rows[j]["corpusId"]);
-                    Guid docId = new Guid((string)urlInfoTbl.Rows[j]["id"]);
-                    DateTime time = DateTime.Parse(timeStr);
-                    if (time >= then)
+                    domainsTbl = new DataTable();
+                    using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
                     {
-                        // URL cache
-                        if (rev == 1)
+                        domainsTbl.Load(sqlReader);
+                    }
+                }
+                foreach (DataRow row in domainsTbl.Rows)
+                {
+                    string domainName = (string)row["domain"];
+                    DataTable urlInfoTbl;
+                    using (SqlCommand sqlCmd = new SqlCommand(string.Format(string.Format(@"
+                        SELECT TOP {0} d.id, d.acqTime, d.responseUrl, d.urlKey, d.rev, d.domain, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.acqTime DESC, dd.rev DESC) AS maxRev, tb.hashCodesBase64 FROM Documents d 
+                        INNER JOIN TextBlocks tb ON d.id = tb.docId WHERE d.domain = @domain ORDER BY d.acqTime DESC
+                        ", mMaxQueueSize)), dbConnection))
+                    {
+                        sqlCmd.AssignParams("domain", domainName);
+                        urlInfoTbl = new DataTable();
+                        using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
                         {
-                            if (urlInfo.First.ContainsKey(urlKey)) { Remove(urlKey, urlInfo); }
-                            //Console.WriteLine(maxRev);
-                            urlInfo.First.Add(urlKey, new Ref<int>(maxRev));
-                            urlInfo.Second.Enqueue(new UrlHistoryEntry(urlKey, time));
+                            urlInfoTbl.Load(sqlReader);
                         }
-                        else
+                    }
+                    if (urlInfoTbl.Rows.Count == 0) { continue; }
+                    Pair<UrlTree, Queue<TextBlockHistoryEntry>> textBlockInfo = GetTextBlockInfo(domainName);
+                    DateTime then = (DateTime)urlInfoTbl.Rows[0]["acqTime"] - new TimeSpan(mHistoryAgeDays, 0, 0, 0);
+                    domainCount++;
+                    Console.WriteLine("* " + domainName + string.Format(" ({0}/{1})", domainCount, domainsTbl.Rows.Count));
+                    Pair<Dictionary<string, Ref<int>>, Queue<UrlHistoryEntry>> urlInfo = GetUrlInfo(domainName);
+                    for (int j = urlInfoTbl.Rows.Count - 1; j >= 0; j--)
+                    {
+                        int rev = (int)urlInfoTbl.Rows[j]["rev"];
+                        int maxRev = (int)urlInfoTbl.Rows[j]["maxRev"];
+                        string urlKey = (string)urlInfoTbl.Rows[j]["urlKey"];
+                        Guid docId = (Guid)urlInfoTbl.Rows[j]["id"];
+                        DateTime time = (DateTime)urlInfoTbl.Rows[j]["acqTime"];
+                        if (time >= then)
                         {
-                            urlInfo.Second.Enqueue(new UrlHistoryEntry(/*urlKey=*/null, time)); // dummy entry into the URL queue (to ensure sync with the text blocks queue)
+                            // URL cache
+                            if (rev == 1)
+                            {
+                                if (urlInfo.First.ContainsKey(urlKey)) { Remove(urlKey, urlInfo); }
+                                urlInfo.First.Add(urlKey, new Ref<int>(maxRev));
+                                urlInfo.Second.Enqueue(new UrlHistoryEntry(urlKey, time));
+                            }
+                            else
+                            {
+                                urlInfo.Second.Enqueue(new UrlHistoryEntry(/*urlKey=*/null, time)); // dummy entry into the URL queue (to ensure sync with the text blocks queue)
+                            }
+                            // URL tree
+                            string hashCodesBase64 = (string)urlInfoTbl.Rows[j]["hashCodesBase64"];
+                            string responseUrl = (string)urlInfoTbl.Rows[j]["responseUrl"];
+                            byte[] buffer = Convert.FromBase64String(hashCodesBase64);
+                            BinarySerializer memSer = new BinarySerializer(new MemoryStream(buffer));
+                            ArrayList<ulong> hashCodes = new ArrayList<ulong>(memSer);
+                            bool fullPath = urlKey.Contains("?");
+                            TextBlockHistoryEntry entry = new TextBlockHistoryEntry(responseUrl, hashCodes, fullPath, time, /*decDocCount=*/rev == 1);
+                            textBlockInfo.First.Insert(responseUrl, hashCodes, mMinNodeDocCount, fullPath, /*insertUnique=*/true, /*incDocCount=*/rev == 1);
+                            textBlockInfo.Second.Enqueue(entry);
                         }
-                        // URL tree
-                        string hashCodesBase64 = (string)urlInfoTbl.Rows[j]["hashCodes"];
-                        string responseUrl = (string)urlInfoTbl.Rows[j]["responseUrl"];
-                        byte[] buffer = Convert.FromBase64String(hashCodesBase64);
-                        BinarySerializer memSer = new BinarySerializer(new MemoryStream(buffer));
-                        ArrayList<ulong> hashCodes = new ArrayList<ulong>(memSer);
-                        bool fullPath = urlKey.Contains("?");
-                        TextBlockHistoryEntry entry = new TextBlockHistoryEntry(responseUrl, hashCodes, fullPath, time, /*decDocCount=*/rev == 1);
-                        textBlockInfo.First.Insert(responseUrl, hashCodes, mMinNodeDocCount, fullPath, /*insertUnique=*/true, /*incDocCount=*/rev == 1);
-                        textBlockInfo.Second.Enqueue(entry);
                     }
                 }
             }
@@ -258,14 +265,6 @@ namespace Latino.Workflows.TextMining
             TextBlockHistoryEntry historyEntry = new TextBlockHistoryEntry(responseUrl, hashCodes, fullPath, time, /*decDocCount=*/incDocCount);
             urlTree.Insert(responseUrl, hashCodes, mMinNodeDocCount, fullPath, /*insertUnique=*/true, incDocCount);
             queue.Enqueue(historyEntry);         
-            if (mDbConnection != null)
-            {
-                BinarySerializer memSer = new BinarySerializer();
-                historyEntry.mHashCodes.Save(memSer);
-                byte[] buffer = ((MemoryStream)memSer.Stream).GetBuffer();
-                string hashCodesBase64 = Convert.ToBase64String(buffer, 0, (int)memSer.Stream.Position);
-                mDbConnection.ExecuteNonQuery("insert into TextBlocks (corpusId, docId, hashCodes) values (?, ?, ?)", corpusId, documentId, hashCodesBase64);
-            }
         }
 
         private void RemoveItems(Pair<Dictionary<string, Ref<int>>, Queue<UrlHistoryEntry>> urlInfo, Pair<UrlTree, Queue<TextBlockHistoryEntry>> textBlockInfo, DateTime time)
@@ -455,6 +454,7 @@ namespace Latino.Workflows.TextMining
                                 {
                                     TextBlock block = blocks[i];
                                     hashCodes.Add(UrlTree.ComputeHashCode(block.Text, /*alphaOnly=*/true));
+                                    block.Annotation.Features.SetFeatureValue("hash", hashCodes.Last.ToString());
                                 }
                                 if (document.Features.GetFeatureValue("rev") == "1")
                                 {
@@ -537,18 +537,6 @@ namespace Latino.Workflows.TextMining
                 mLogger.Error("ProcessData", exception);
             }
             return corpus;
-        }
-
-        // *** IDisposable interface implementation ***
-
-        public new void Dispose()
-        {
-            base.Dispose();
-            if (mDbConnection != null)
-            {
-                try { mDbConnection.Disconnect(); }
-                catch { }
-            }
         }
     }
 }

@@ -3,6 +3,10 @@ IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Docum
 DROP TABLE [dbo].[Documents]
 GO
 
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TextBlocks]') AND type in (N'U'))
+DROP TABLE [dbo].[TextBlocks]
+GO
+
 /****** Object:  Table [dbo].[Documents]    Script Date: 05/09/2013 13:30:57 ******/
 SET ANSI_NULLS ON
 GO
@@ -40,6 +44,27 @@ CREATE TABLE [dbo].[Documents](
 		[id] ASC
 	) WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = ON, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+/****** Object:  Table [dbo].[TextBlocks]    Script Date: 02/12/2014 15:32:46 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [dbo].[TextBlocks](
+	[docId] [uniqueidentifier] NOT NULL,
+	[hashCodes] [varbinary](max) NOT NULL,
+	[hashCodesBase64] [text] NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
 GO
 
