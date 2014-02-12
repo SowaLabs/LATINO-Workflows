@@ -248,7 +248,7 @@ namespace Latino.Workflows.WebMining
                         itemAttr.Add("responseUrl", responseUrl);
                         itemAttr.Add("mimeType", mimeType);
                         itemAttr.Add("contentType", contentType.ToString());
-                        if (charSet == null) { charSet = "ISO-8859-1"; }
+                        if (charSet == null) { charSet = Config.RssFeedComponent_DefaultHtmlEncoding; }
                         itemAttr.Add("charSet", charSet);
                         itemAttr.Add("contentLength", bytes.Length.ToString());
                         if (contentType == ContentType.Binary)
@@ -362,7 +362,7 @@ namespace Latino.Workflows.WebMining
                     try
                     {
                         mLogger.Info("ProduceData", "Getting RSS XML from {0} ...", url);
-                        xml = WebUtils.GetWebPageDetectEncoding(url);
+                        xml = WebUtils.GetWebPageDetectEncoding(url, Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding));
                         xml = FixXml(xml);
                     }
                     catch (Exception e)

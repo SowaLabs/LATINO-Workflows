@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="DocumentStreamReaderComponent.cs" />
     <Compile Include="DocumentFilterComponent.cs" />
     <Compile Include="PassOnComponent.cs" />
