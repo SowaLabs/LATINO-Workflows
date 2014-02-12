@@ -42,6 +42,7 @@ namespace Latino.Workflows.Persistance
         {
             DataTable t = new DataTable();
             t.Columns.Add("id", typeof(Guid));
+            t.Columns.Add("hash", typeof(Guid));
             t.Columns.Add("name", typeof(string));
             t.Columns.Add("description", typeof(string));
             t.Columns.Add("category", typeof(string));
@@ -60,8 +61,6 @@ namespace Latino.Workflows.Persistance
             t.Columns.Add("rev", typeof(int));
             t.Columns.Add("fileName", typeof(string));
             t.Columns.Add("siteId", typeof(string));
-            t.Columns.Add("oldIdCorpus", typeof(Guid));
-            t.Columns.Add("oldIdDocument", typeof(Guid));
             return t;
         }
 
@@ -144,6 +143,7 @@ namespace Latino.Workflows.Persistance
                     string fileName = string.Format("{0:yyyy}\\{0:MM}\\{0:dd}\\{0:HH}_{0:mm}_{0:ss}_{1:N}.xml.gz", time, docId);                    
                     dt.Rows.Add(
                         new Guid(d.Features.GetFeatureValue("guid")),
+                        dGuid,
                         Utils.Truncate(d.Name, 400),
                         Utils.Truncate(d.Features.GetFeatureValue("description"), 400),
                         Utils.Truncate(d.Features.GetFeatureValue("category"), 400),
@@ -161,9 +161,7 @@ namespace Latino.Workflows.Persistance
                         Convert.ToInt32(d.Features.GetFeatureValue("unseenContentCharCount")),
                         Convert.ToInt32(d.Features.GetFeatureValue("rev")),
                         Utils.Truncate(fileName, 100),
-                        Utils.Truncate(c.Features.GetFeatureValue("siteId"), 100),
-                        cGuid,
-                        dGuid 
+                        Utils.Truncate(c.Features.GetFeatureValue("siteId"), 100)
                         );
                     BinarySerializer memSer = new BinarySerializer();
                     hashCodes.Save(memSer);
