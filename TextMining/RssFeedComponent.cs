@@ -506,7 +506,7 @@ namespace Latino.Workflows.WebMining
                         DataTable table = new DataTable();
                         if (siteId == null)
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} id FROM Documents WHERE siteId IS NULL ORDER BY time DESC", mHistorySize), connection))
+                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} hash FROM Documents WHERE siteId IS NULL ORDER BY acqTime DESC", mHistorySize), connection))
                             {
                                 cmd.CommandTimeout = 0;
                                 using (SqlDataReader reader = cmd.ExecuteReader()) 
@@ -517,7 +517,7 @@ namespace Latino.Workflows.WebMining
                         }
                         else
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} id FROM Documents WHERE siteId = @siteId ORDER BY acqTime DESC", mHistorySize), connection))
+                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} hash FROM Documents WHERE siteId = @siteId ORDER BY acqTime DESC", mHistorySize), connection))
                             {
                                 cmd.CommandTimeout = 0;
                                 WorkflowUtils.AssignParamsToCommand(cmd, "siteId", Utils.Truncate(siteId, 400));
@@ -532,7 +532,7 @@ namespace Latino.Workflows.WebMining
                         for (int i = table.Rows.Count - 1; i >= 0; i--)
                         {
                             DataRow row = table.Rows[i];
-                            Guid itemId = (Guid)row["id"];
+                            Guid itemId = (Guid)row["hash"];
                             mHistory.First.Add(itemId);
                             mHistory.Second.Enqueue(itemId);
                         }
