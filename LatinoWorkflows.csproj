@@ -55,7 +55,6 @@
     <Compile Include="Semantics\EntityRecognitionComponent.cs" />
     <Compile Include="Semantics\EntityRecognitionEngine.cs" />
     <Compile Include="StreamDataProducer.cs" />
-    <Compile Include="Persistance\DocumentCorpusWriterComponent.cs" />
     <Compile Include="TextMining\BoilerplateRemoverComponent.cs" />
     <Compile Include="TextMining\HtmlTokenizerComponent.cs" />
     <Compile Include="TextMining\DocumentCorpus\Tree.cs" />
