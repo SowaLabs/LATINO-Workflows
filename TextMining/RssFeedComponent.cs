@@ -11,6 +11,7 @@
  ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Xml;
 using System.IO;
@@ -86,6 +87,9 @@ namespace Latino.Workflows.WebMining
         private int mMaxDocsPerCorpus
             = -1;
 
+        private Language? mRssXmlCodePageDetectorLanguage
+            = null;
+
         private static ContentType GetContentType(string mimeType)
         {
             if (mHtmlMimeTypeRegex.Match(mimeType).Success)
@@ -154,6 +158,12 @@ namespace Latino.Workflows.WebMining
             {
                 AddSource(rssUrl); // throws ArgumentNullException, ArgumentValueException
             }
+        }
+
+        public Language? RssXmlCodePageDetectorLanguage
+        {
+            get { return mRssXmlCodePageDetectorLanguage; }
+            set { mRssXmlCodePageDetectorLanguage = value; }
         }
 
         public bool IncludeRawData
@@ -349,6 +359,36 @@ namespace Latino.Workflows.WebMining
             channelAttr.Add("timeStart", timeStart.ToString(Utils.DATE_TIME_SIMPLE));            
         }
 
+        private static string ExtractRssXmlContent(string xml)
+        {
+            string content = "";
+            ArrayList<string> tags = new ArrayList<string>(new string[] { "title", "description" });
+            using (XmlTextReader reader = new XmlTextReader(new StringReader(xml)))
+            {
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element && reader.Name == "item" && !reader.IsEmptyElement)
+                    {
+                        while (reader.Read() && !(reader.NodeType == XmlNodeType.EndElement && reader.Name == "item"))
+                        {
+                            if (reader.NodeType == XmlNodeType.Element)
+                            {
+                                if (tags.Contains(reader.Name))
+                                {
+                                    content += Utils.XmlReadValue(reader, reader.Name) + " ";
+                                }
+                                else
+                                {
+                                    Utils.XmlSkip(reader, reader.Name);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Regex.Replace(content, @"\<[^>]\>", " ");
+        }
+
         protected override object ProduceData()
         {
             for (int i = 0; i < mSources.Count; i++)
@@ -364,13 +404,40 @@ namespace Latino.Workflows.WebMining
                     try
                     {
                         mLogger.Info("ProduceData", "Getting RSS XML from {0} ...", url);
-                        CookieContainer cookies = null;
-                        bool success;
-                        string responseUri;
-                        xml = WebUtils.GetWebPageDetectEncoding(url, Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding), 
-                            /*refUrl=*/null, ref cookies, out success, WebUtils.DefaultTimeout, out responseUri);
-                        xml = FixXml(xml);
-                        channelAttr.Add("rssXmlCharSetDetected", success ? "true" : "false");
+                        string mimeType, charSet;
+                        Encoding codePage = null;
+                        byte[] xmlBytes = WebUtils.GetWebResource(url, out mimeType, out charSet);
+                        //channelAttr.Add("debug", (charSet != null) ? "yes " : "no ");
+                        if (charSet == null) // charSet info not given
+                        {
+                            if (mRssXmlCodePageDetectorLanguage != null)
+                            {
+                                // get RSS XML as ASCII
+                                xml = FixXml(Encoding.GetEncoding("ISO-8859-1").GetString(xmlBytes));
+                                // extract texts
+                                string content = ExtractRssXmlContent(xml);
+                                // try to guess code page
+                                LanguageDetector ld = LanguageDetector.GetLanguageDetectorPrebuilt();
+                                ArrayList<KeyDat<double, LanguageProfile>> ldResult = ld.DetectLanguageAll(content);
+                                try
+                                {
+                                    LanguageProfile bestLanguageProfile = ldResult
+                                        .Where(x => x.Second.Language == mRssXmlCodePageDetectorLanguage)
+                                        .OrderBy(x => x.First)
+                                        .First()
+                                        .Second;
+                                    codePage = bestLanguageProfile.CodePage;
+                                    //channelAttr["debug"] += codePage.WebName + " " + url;
+                                }
+                                catch { }
+                            }
+                        }
+                        else
+                        {
+                            codePage = Encoding.GetEncoding(charSet);
+                        }
+                        if (codePage == null) { codePage = Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding); }
+                        xml = FixXml(codePage.GetString(xmlBytes));                        
                     }
                     catch (Exception e)
                     {

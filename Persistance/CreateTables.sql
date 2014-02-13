@@ -22,7 +22,7 @@ CREATE TABLE [dbo].[Documents](
 	[hash] [uniqueidentifier] NULL,
 	[name] [nvarchar](400) NULL,
 	[description] [nvarchar](400) NULL,
-	[rssXmlCharSetDetected] [bit] NULL,
+	--[debug] [ntext] NULL,
 	[snippet] [nvarchar](1000) NULL,
 	[category] [nvarchar](400) NULL,
 	[link] [varchar](400) NULL,

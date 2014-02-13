@@ -45,7 +45,7 @@ namespace Latino.Workflows.Persistance
             t.Columns.Add("hash", typeof(Guid));
             t.Columns.Add("name", typeof(string));
             t.Columns.Add("description", typeof(string));
-            t.Columns.Add("rssXmlCharSetDetected", typeof(bool));
+            //t.Columns.Add("debug", typeof(string));
             t.Columns.Add("snippet", typeof(string));
             t.Columns.Add("category", typeof(string));
             t.Columns.Add("link", typeof(string));
@@ -148,7 +148,7 @@ namespace Latino.Workflows.Persistance
                         dGuid,
                         Utils.Truncate(d.Name, 400),
                         Utils.Truncate(d.Features.GetFeatureValue("description"), 400),
-                        c.Features.GetFeatureValue("rssXmlCharSetDetected") == "true",
+                        //c.Features.GetFeatureValue("debug"),
                         Utils.Truncate(d.Text, 1000),
                         Utils.Truncate(d.Features.GetFeatureValue("category"), 400),
                         Utils.Truncate(d.Features.GetFeatureValue("link"), 400),
