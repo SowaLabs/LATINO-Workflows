@@ -107,9 +107,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Persistance\CleanupDb.sql" />
     <None Include="Persistance\CreateTables.sql" />
-    <None Include="Persistance\CreateTablesNew.sql" />
     <EmbeddedResource Include="TextMining\Resources\EnglishPOS.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishSD.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishTok.nbin" />

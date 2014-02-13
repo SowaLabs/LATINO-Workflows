@@ -23,6 +23,7 @@ using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 using Latino.Web;
 using Latino.Workflows.TextMining;
+using Latino.TextMining;
 
 namespace Latino.Workflows.WebMining
 {
@@ -357,20 +358,25 @@ namespace Latino.Workflows.WebMining
                 try
                 {                    
                     DateTime timeStart = DateTime.Now;
+                    Dictionary<string, string> channelAttr = new Dictionary<string, string>();
                     // get RSS XML
                     string xml;
                     try
                     {
                         mLogger.Info("ProduceData", "Getting RSS XML from {0} ...", url);
-                        xml = WebUtils.GetWebPageDetectEncoding(url, Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding));
+                        CookieContainer cookies = null;
+                        bool success;
+                        string responseUri;
+                        xml = WebUtils.GetWebPageDetectEncoding(url, Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding), 
+                            /*refUrl=*/null, ref cookies, out success, WebUtils.DefaultTimeout, out responseUri);
                         xml = FixXml(xml);
+                        channelAttr.Add("rssXmlCharSetDetected", success ? "true" : "false");
                     }
                     catch (Exception e)
                     {
                         mLogger.Error("ProduceData", e);
                         return null;
-                    }
-                    Dictionary<string, string> channelAttr = new Dictionary<string, string>();
+                    }                    
                     DocumentCorpus corpus = new DocumentCorpus();
                     corpus.Features.SetFeatureValue("guid", Guid.NewGuid().ToString());
                     XmlTextReader reader = new XmlTextReader(new StringReader(xml));
