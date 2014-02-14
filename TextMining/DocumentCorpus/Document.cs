@@ -33,7 +33,7 @@ namespace Latino.Workflows.TextMining
        '-----------------------------------------------------------------------
     */
     [XmlSchemaProvider("ProvideSchema")]
-    public class Document : ICloneable<Document>, System.Xml.Serialization.IXmlSerializable, ISerializable
+    public class Document : ICloneable<Document>, IXmlSerializable, ISerializable
     {
         private Ref<string> mText;
         private string mName;
@@ -343,6 +343,125 @@ namespace Latino.Workflows.TextMining
             }            
             writer.WriteEndElement();
             if (writeTopElement) { writer.WriteEndElement(); }
+        }
+
+        public void WriteXmlCompressed(string fileName)
+        {
+            Utils.ThrowException(!Utils.VerifyFileNameCreate(fileName) ? new ArgumentValueException("fileName") : null);
+            using (FileStream stream = new FileStream(fileName, FileMode.Create))
+            {
+                WriteXmlCompressed(stream);
+            }
+        }
+
+        public void WriteXmlCompressed(Stream outStream)
+        {
+            using (GZipStream gzStream = new GZipStream(outStream, CompressionMode.Compress))
+            {
+                XmlWriterSettings xmlSettings = new XmlWriterSettings();
+                xmlSettings.Indent = true;
+                xmlSettings.IndentChars = "\t";
+                xmlSettings.CheckCharacters = false;
+                using (XmlWriter xmlWriter = XmlWriter.Create(gzStream, xmlSettings))
+                {
+                    WriteXml(xmlWriter, /*writeTopElement=*/true);
+                }
+            }
+        }
+
+        public void ReadXmlCompressed(string fileName)
+        {
+            Utils.ThrowException(!Utils.VerifyFileNameOpen(fileName) ? new ArgumentValueException("fileName") : null);
+            using (FileStream stream = new FileStream(fileName, FileMode.Open))
+            {
+                ReadXmlCompressed(stream);
+            }
+        }
+
+        public void ReadXmlCompressed(Stream inStream)
+        {
+            using (GZipStream gzStream = new GZipStream(inStream, CompressionMode.Decompress))
+            {
+                XmlReaderSettings xmlSettings = new XmlReaderSettings();
+                xmlSettings.CheckCharacters = false;
+                using (XmlReader xmlReader = XmlReader.Create(new XmlTextReader(inStream), xmlSettings))
+                {
+                    ReadXml(xmlReader);
+                }
+            }
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            WriteXml(writer, /*writeTopElement=*/false); // throws ArgumentNullException
+        }
+
+        public string GetXml() 
+        {
+            StringWriter stringWriter;
+            XmlWriterSettings xmlSettings = new XmlWriterSettings();
+            xmlSettings.Indent = true;
+            xmlSettings.NewLineOnAttributes = true;
+            xmlSettings.CheckCharacters = false;
+            xmlSettings.IndentChars = "\t";
+            XmlWriter writer = XmlWriter.Create(stringWriter = new StringWriter(), xmlSettings);
+            WriteXml(writer, /*writeTopElement=*/true);
+            writer.Close();
+            return stringWriter.ToString();
+        }
+
+        public void Save(BinarySerializer writer)
+        {
+            writer.WriteString(mText.Val);
+            writer.WriteString(mName);
+            mAnnotations.Save(writer);
+            Utils.SaveDictionary(mFeatures, writer);
+            writer.WriteBool(mAnnotationIndex == null);
+        }
+
+        public void Load(BinarySerializer reader)
+        {
+            mText = reader.ReadString();
+            mName = reader.ReadString();
+            mAnnotations = new ArrayList<Annotation>(reader);
+            mFeatures = Utils.LoadDictionary<string, string>(reader);
+            mFeaturesInterface = new Features(mFeatures);
+            mAnnotationIndex = null;
+            bool annotationIndexNull = reader.ReadBool();
+            if (!annotationIndexNull) { CreateAnnotationIndex(); }
+        }
+
+        // *** Output HTML ***
+
+        public string GetHtml(bool inlineCss, bool inlineJs)
+        {
+            ArrayList<object> treeItems, features, content;
+            DocumentSerializer.SerializeDocument(this, out treeItems, out features, out content);
+            string template = Utils.GetManifestResourceString(this.GetType(), "DocumentTemplateNew.html");
+            JavaScriptSerializer jsSer = new JavaScriptSerializer();
+            template = template.Replace("${Title}", HttpUtility.HtmlEncode(Name));
+            template = template.Replace("${TreeItemsParam}", jsSer.Serialize(treeItems));
+            template = template.Replace("${FeaturesParam}", jsSer.Serialize(features));
+            template = template.Replace("${ContentParam}", jsSer.Serialize(content));
+            if (inlineCss)
+            {
+                string css = "<style type=\"text/css\">" + Utils.GetManifestResourceString(this.GetType(), "Styles.css") + "</style>";
+                template = template.Replace("${Css}", css);
+            }
+            else
+            {
+                template = template.Replace("${Css}", "<link href=\"Styles.css\" rel=\"stylesheet\"/>");
+            }
+            if (inlineJs)
+            {
+                string js = "<script type=\"text/javascript\">" + Utils.GetManifestResourceString(this.GetType(), "Code.js") + "</script>";
+                template = template.Replace("${Js}", js);
+            }
+            else
+            {
+                template = template.Replace("${Js}", "<script src=\"Code.js\"></script>");
+            }
+            return template;
         }
 
 #if GATE_SUPPORT
@@ -660,105 +779,8 @@ namespace Latino.Workflows.TextMining
         }
 #endif
 
-        public void WriteXmlCompressed(string fileName)
-        {
-            Utils.ThrowException(!Utils.VerifyFileNameCreate(fileName) ? new ArgumentValueException("fileName") : null);
-            using (FileStream stream = new FileStream(fileName, FileMode.Create))
-            {
-                WriteXmlCompressed(stream);
-            }
-        }
-
-        public void WriteXmlCompressed(Stream outStream)
-        {
-            using (GZipStream gzStream = new GZipStream(outStream, CompressionMode.Compress))
-            {
-                XmlWriterSettings xmlSettings = new XmlWriterSettings();
-                xmlSettings.Indent = true;
-                xmlSettings.IndentChars = "\t";
-                xmlSettings.CheckCharacters = false;
-                using (XmlWriter xmlWriter = XmlWriter.Create(gzStream, xmlSettings))
-                {
-                    WriteXml(xmlWriter, /*writeTopElement=*/true);
-                }
-            }
-        }
-
-        public void ReadXmlCompressed(string fileName)
-        {
-            Utils.ThrowException(!Utils.VerifyFileNameOpen(fileName) ? new ArgumentValueException("fileName") : null);
-            using (FileStream stream = new FileStream(fileName, FileMode.Open))
-            {
-                ReadXmlCompressed(stream);
-            }
-        }
-
-        public void ReadXmlCompressed(Stream inStream)
-        {
-            using (GZipStream gzStream = new GZipStream(inStream, CompressionMode.Decompress))
-            {
-                XmlReaderSettings xmlSettings = new XmlReaderSettings();
-                xmlSettings.CheckCharacters = false;
-                using (XmlReader xmlReader = XmlReader.Create(new XmlTextReader(inStream), xmlSettings))
-                {
-                    ReadXml(xmlReader);
-                }
-            }
-        }
-
-        public void WriteXml(XmlWriter writer)
-        {
-            WriteXml(writer, /*writeTopElement=*/false); // throws ArgumentNullException
-        }
-
-        public string GetXml() 
-        {
-            StringWriter stringWriter;
-            XmlWriterSettings xmlSettings = new XmlWriterSettings();
-            xmlSettings.Indent = true;
-            xmlSettings.NewLineOnAttributes = true;
-            xmlSettings.CheckCharacters = false;
-            xmlSettings.IndentChars = "\t";
-            XmlWriter writer = XmlWriter.Create(stringWriter = new StringWriter(), xmlSettings);
-            WriteXml(writer, /*writeTopElement=*/true);
-            writer.Close();
-            return stringWriter.ToString();
-        }
-
-        // *** Output HTML (new) ***
-
-        public string GetHtml(bool inlineCss, bool inlineJs)
-        {
-            ArrayList<object> treeItems, features, content;
-            DocumentSerializer.SerializeDocument(this, out treeItems, out features, out content);
-            string template = Utils.GetManifestResourceString(this.GetType(), "DocumentTemplateNew.html");
-            JavaScriptSerializer jsSer = new JavaScriptSerializer();
-            template = template.Replace("${Title}", HttpUtility.HtmlEncode(Name));
-            template = template.Replace("${TreeItemsParam}", jsSer.Serialize(treeItems));
-            template = template.Replace("${FeaturesParam}", jsSer.Serialize(features));
-            template = template.Replace("${ContentParam}", jsSer.Serialize(content));
-            if (inlineCss)
-            {
-                string css = "<style type=\"text/css\">" + Utils.GetManifestResourceString(this.GetType(), "Styles.css") + "</style>";
-                template = template.Replace("${Css}", css);
-            }
-            else
-            {
-                template = template.Replace("${Css}", "<link href=\"Styles.css\" rel=\"stylesheet\"/>");
-            }
-            if (inlineJs)
-            {
-                string js = "<script type=\"text/javascript\">" + Utils.GetManifestResourceString(this.GetType(), "Code.js") + "</script>";
-                template = template.Replace("${Js}", js);
-            }
-            else
-            {
-                template = template.Replace("${Js}", "<script src=\"Code.js\"></script>");
-            }
-            return template;
-        }
-
-        // *** Output HTML ***
+#if OLD_HTML_OUTPUT
+        // *** Output HTML (old) ***
 
         private static Set<string> uriFeatures
             = new Set<string>(new string[] { "link", "responseUrl", "urlKey" });
@@ -1049,27 +1071,6 @@ namespace Latino.Workflows.TextMining
             }
             return str.ToString() + "\"";
         }
-
-        public void Save(BinarySerializer writer) {
-            writer.WriteString(mText.Val);
-            writer.WriteString(mName);
-            mAnnotations.Save(writer);
-            
-            Utils.SaveDictionary(mFeatures, writer);
-            writer.WriteBool(mAnnotationIndex==null);
-        }
-        
-        public void Load(BinarySerializer reader) {
-            mText = reader.ReadString();
-            mName = reader.ReadString();
-            mAnnotations = new ArrayList<Annotation>(reader);
-
-            mFeatures = Utils.LoadDictionary<string, string>(reader);
-            mFeaturesInterface = new Features(mFeatures);
-            
-            mAnnotationIndex = null;
-            bool annotationIndexNull = reader.ReadBool();
-            if (!annotationIndexNull) CreateAnnotationIndex();
-        }
+#endif
     }
 }

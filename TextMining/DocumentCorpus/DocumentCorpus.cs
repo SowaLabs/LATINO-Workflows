@@ -249,6 +249,20 @@ namespace Latino.Workflows.TextMining
             fileWriter.Close(); 
         }
 
+        public void Save(BinarySerializer writer)
+        {
+            mDocuments.Save(writer);
+            Utils.SaveDictionary(mFeatures, writer);
+        }
+
+        public void Load(BinarySerializer reader)
+        {
+            mDocuments = new ArrayList<Document>(reader);
+            mFeatures = Utils.LoadDictionary<string, string>(reader);
+            mFeaturesInterface = new Features(mFeatures);
+        }        
+
+#if OLD_HTML_OUTPUT
         // *** output HTML ***
 
         public void MakeHtmlPage(string path, bool inlineCss)
@@ -309,18 +323,6 @@ namespace Latino.Workflows.TextMining
             return count;
 
         }
-
-        public void Save(BinarySerializer writer) 
-        {
-            mDocuments.Save(writer);
-            Utils.SaveDictionary(mFeatures, writer);
-        }
-        
-        public void Load(BinarySerializer reader) 
-        {
-            mDocuments = new ArrayList<Document>(reader);
-            mFeatures = Utils.LoadDictionary<string, string>(reader);
-            mFeaturesInterface = new Features(mFeatures);
-        }
+#endif
     }
 }
