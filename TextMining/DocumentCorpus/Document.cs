@@ -237,10 +237,6 @@ namespace Latino.Workflows.TextMining
                 else if (reader.NodeType == XmlNodeType.Element && reader.Name == "Text")
                 {
                     mText = Utils.XmlReadValue(reader, "Text");
-                    if (!mText.Val.Contains("\r\n"))
-                    {
-                        mText = mText.Val.Replace("\n", "\r\n");
-                    }
                 }
                 else if (reader.NodeType == XmlNodeType.Element && reader.Name == "Annotation" && !reader.IsEmptyElement)
                 {
@@ -347,6 +343,12 @@ namespace Latino.Workflows.TextMining
             }            
             writer.WriteEndElement();
             if (writeTopElement) { writer.WriteEndElement(); }
+        }
+
+#if GATE_SUPPORT
+        public void WriteGateXml(XmlWriter writer)
+        {
+            WriteGateXml(writer, /*writeTopElement=*/false, /*removeBoilerplate*/false); // throws ArgumentNullException
         }
 
         public void WriteGateXml(string fileName, bool writeTopElement, bool removeBoilerplate)
@@ -656,6 +658,7 @@ namespace Latino.Workflows.TextMining
 
             if (writeTopElement) { writer.WriteEndElement(); } //</GateDocument>
         }
+#endif
 
         public void WriteXmlCompressed(string fileName)
         {
@@ -696,7 +699,7 @@ namespace Latino.Workflows.TextMining
             {
                 XmlReaderSettings xmlSettings = new XmlReaderSettings();
                 xmlSettings.CheckCharacters = false;
-                using (XmlReader xmlReader = XmlReader.Create(gzStream, xmlSettings))
+                using (XmlReader xmlReader = XmlReader.Create(new XmlTextReader(inStream), xmlSettings))
                 {
                     ReadXml(xmlReader);
                 }
@@ -720,11 +723,6 @@ namespace Latino.Workflows.TextMining
             WriteXml(writer, /*writeTopElement=*/true);
             writer.Close();
             return stringWriter.ToString();
-        }
-
-        public void WriteGateXml(XmlWriter writer)
-        {
-            WriteGateXml(writer, /*writeTopElement=*/false, /*removeBoilerplate*/false); // throws ArgumentNullException
         }
 
         // *** Output HTML (new) ***

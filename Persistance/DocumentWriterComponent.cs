@@ -29,7 +29,7 @@ namespace Latino.Workflows.Persistance
         private string mHtmlViewRoot;
         private int mCommandTimeout;
 
-        private object mLock
+        private static object mStaticLock
             = new object();
 
         public DocumentWriterComponent(string connectionString, int cmdTimeout, string xmlDataRoot, string htmlDataRoot, string htmlViewRoot) : base(typeof(DocumentWriterComponent))
@@ -108,7 +108,9 @@ namespace Latino.Workflows.Persistance
                     {
                         ulong hashCode = Convert.ToUInt64(annot.Features.GetFeatureValue("hash"));
                         hashCodes.Add(hashCode);
-                        annot.Features.Clear(); 
+                        string isLink = annot.Features.GetFeatureValue("isLink");
+                        annot.Features.Clear();
+                        annot.Features.SetFeatureValue("isLink", isLink);
                     }
                 }
                 // write doc XML
@@ -116,10 +118,7 @@ namespace Latino.Workflows.Persistance
                 {
                     string outFileName = string.Format("{0}\\{1:yyyy}\\{1:MM}\\{1:dd}\\{1:HH}_{1:mm}_{1:ss}_{2:N}.xml.gz", mXmlDataRoot, time, docId);
                     string path = new FileInfo(outFileName).DirectoryName;
-                    if (!Directory.Exists(path))
-                    {
-                        lock (mLock) { if (!Directory.Exists(path)) { Directory.CreateDirectory(path); } }
-                    }
+                    Directory.CreateDirectory(path); 
                     d.WriteXmlCompressed(outFileName);
                 }
                 // write raw HTML
@@ -127,10 +126,7 @@ namespace Latino.Workflows.Persistance
                 {
                     string outFileName = string.Format("{0}\\{1:yyyy}\\{1:MM}\\{1:dd}\\{1:HH}_{1:mm}_{1:ss}_{2:N}.html.gz", mHtmlDataRoot, time, docId);
                     string path = new FileInfo(outFileName).DirectoryName;
-                    if (!Directory.Exists(path))
-                    {
-                        lock (mLock) { if (!Directory.Exists(path)) { Directory.CreateDirectory(path); } }
-                    }
+                    Directory.CreateDirectory(path); 
                     using (FileStream stream = new FileStream(outFileName, FileMode.Create))
                     {
                         using (GZipStream gzStream = new GZipStream(stream, CompressionMode.Compress))
@@ -149,13 +145,16 @@ namespace Latino.Workflows.Persistance
                     string path = new FileInfo(outFileName).DirectoryName.TrimEnd('\\');
                     if (!Directory.Exists(path))
                     {
-                        lock (mLock) { if (!Directory.Exists(path)) { Directory.CreateDirectory(path); } }
+                        Directory.CreateDirectory(path);
                         string css = Utils.GetManifestResourceString(this.GetType(), "Styles.css");
                         string js = Utils.GetManifestResourceString(this.GetType(), "Code.js");
-                        File.WriteAllText(path + "\\Styles.css", css);
-                        File.WriteAllText(path + "\\Code.js", js);
+                        lock (mStaticLock)
+                        {
+                            File.WriteAllText(path + "\\Styles.css", css);
+                            File.WriteAllText(path + "\\Code.js", js);
+                        }
                     }
-                    File.WriteAllText(outFileName, doc.GetHtml(/*inlineCss=*/false, /*inlineJs=*/false), Encoding.UTF8);
+                    File.WriteAllText(outFileName, d.GetHtml(/*inlineCss=*/false, /*inlineJs=*/false), Encoding.UTF8); 
                 }
                 // prepare for bulk write
                 if (mConnectionString != null) 
