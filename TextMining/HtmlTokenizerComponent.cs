@@ -45,6 +45,7 @@ namespace Latino.Workflows.WebMining
                 int idx = 0;
                 ArrayList<string> txtBlocks = new ArrayList<string>();
                 bool merge = false;
+                bool isLink = false;
                 for (HtmlTokenizer.Enumerator e = (HtmlTokenizer.Enumerator)htmlTokenizer.GetEnumerator(); e.MoveNext(); )
                 {
                     if (e.CurrentToken.TokenType == HtmlTokenizer.TokenType.Text)
@@ -56,14 +57,17 @@ namespace Latino.Workflows.WebMining
                             {
                                 txtBlocks.Add(textBlock);
                                 document.AddAnnotation(new Annotation(idx, idx + textBlock.Length - 1, "TextBlock"));
+                                document.Annotations.Last.Features.SetFeatureValue("isLink", isLink ? "yes" : "no");
                             }
                             else
                             {
                                 idx--;
                                 txtBlocks.Last += " " + textBlock;
                                 int oldStartIdx = document.GetAnnotationAt(document.AnnotationCount - 1).SpanStart;
+                                bool oldIsLink = document.Annotations.Last.Features.GetFeatureValue("isLink") == "yes";
                                 document.RemoveAnnotationAt(document.AnnotationCount - 1);
                                 document.AddAnnotation(new Annotation(oldStartIdx, idx + textBlock.Length - 1, "TextBlock"));
+                                document.Annotations.Last.Features.SetFeatureValue("isLink", (oldIsLink && isLink) ? "yes" : "no");
                             }
                             idx += textBlock.Length + 2;
                             merge = true;
@@ -71,7 +75,12 @@ namespace Latino.Workflows.WebMining
                     }
                     else
                     {
-                        if (mTagKeepList.Contains(e.CurrentToken.TagName.ToLower()))
+                        string tagName = e.CurrentToken.TagName.ToLower();
+                        if (tagName == "a")
+                        {
+                            isLink = e.CurrentToken.TokenType == HtmlTokenizer.TokenType.StartTag;
+                        }
+                        if (mTagKeepList.Contains(tagName))
                         {
                             merge = false;
                         }
