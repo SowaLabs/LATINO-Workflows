@@ -11,9 +11,11 @@
  ***************************************************************************/
 
 using System;
+using System.Linq;
 using System.Text;
 using Latino.WebMining;
 using Latino.Workflows.TextMining;
+using System.Collections.Generic;
 
 namespace Latino.Workflows.WebMining
 {
@@ -45,7 +47,7 @@ namespace Latino.Workflows.WebMining
                 int idx = 0;
                 ArrayList<string> txtBlocks = new ArrayList<string>();
                 bool merge = false;
-                bool isLink = false;
+                Stack<string> tags = new Stack<string>();
                 for (HtmlTokenizer.Enumerator e = (HtmlTokenizer.Enumerator)htmlTokenizer.GetEnumerator(); e.MoveNext(); )
                 {
                     if (e.CurrentToken.TokenType == HtmlTokenizer.TokenType.Text)
@@ -53,21 +55,28 @@ namespace Latino.Workflows.WebMining
                         string textBlock = Utils.ToOneLine(e.Current.Trim(), /*compact=*/true);
                         if (textBlock != "")
                         {
+                            string domPath = tags.Aggregate((x, y) => y + "/" + x);
+                            bool isLink = tags.Contains("a");
                             if (!merge)
                             {
                                 txtBlocks.Add(textBlock);
                                 document.AddAnnotation(new Annotation(idx, idx + textBlock.Length - 1, "TextBlock"));
-                                document.Annotations.Last.Features.SetFeatureValue("isLink", isLink ? "yes" : "no");
+                                document.Annotations.Last.Features.SetFeatureValue("domPath", domPath);
+                                document.Annotations.Last.Features.SetFeatureValue("linkToTextRatio", string.Format("{0}/{1}", isLink ? textBlock.Length : 0, textBlock.Length));
                             }
                             else
                             {
                                 idx--;
                                 txtBlocks.Last += " " + textBlock;
                                 int oldStartIdx = document.GetAnnotationAt(document.AnnotationCount - 1).SpanStart;
-                                bool oldIsLink = document.Annotations.Last.Features.GetFeatureValue("isLink") == "yes";
+                                string oldDomPath = document.Annotations.Last.Features.GetFeatureValue("domPath");
+                                string oldLinkToTextRatio = document.Annotations.Last.Features.GetFeatureValue("linkToTextRatio");
                                 document.RemoveAnnotationAt(document.AnnotationCount - 1);
                                 document.AddAnnotation(new Annotation(oldStartIdx, idx + textBlock.Length - 1, "TextBlock"));
-                                document.Annotations.Last.Features.SetFeatureValue("isLink", (oldIsLink && isLink) ? "yes" : "no");
+                                document.Annotations.Last.Features.SetFeatureValue("domPath", domPath.Length < oldDomPath.Length ? domPath : oldDomPath);
+                                int linkCharCount = Convert.ToInt32(oldLinkToTextRatio.Split('/')[0]) + (isLink ? textBlock.Length : 0);
+                                int textCharCount = Convert.ToInt32(oldLinkToTextRatio.Split('/')[1]) + textBlock.Length;
+                                document.Annotations.Last.Features.SetFeatureValue("linkToTextRatio", string.Format("{0}/{1}", linkCharCount, textCharCount));
                             }
                             idx += textBlock.Length + 2;
                             merge = true;
@@ -76,13 +85,22 @@ namespace Latino.Workflows.WebMining
                     else
                     {
                         string tagName = e.CurrentToken.TagName.ToLower();
-                        if (tagName == "a")
-                        {
-                            isLink = e.CurrentToken.TokenType == HtmlTokenizer.TokenType.StartTag;
-                        }
                         if (mTagKeepList.Contains(tagName))
                         {
                             merge = false;
+                        }
+                        if (e.CurrentToken.TokenType == HtmlTokenizer.TokenType.StartTag)
+                        {
+                            tags.Push(tagName);
+                        }
+                        else if (e.CurrentToken.TokenType == HtmlTokenizer.TokenType.EndTag)
+                        {
+                            string endTagName = tags.Pop();
+                            if (tags.Count == 0 || endTagName != tagName)
+                            {
+                                mLogger.Error("ProcessDocument", "End tag does not match start tag (found {0} instead of {1}).", endTagName, tagName);
+                                tags.Push(endTagName);
+                            }
                         }
                     }
                 }

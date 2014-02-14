@@ -108,9 +108,11 @@ namespace Latino.Workflows.Persistance
                     {
                         ulong hashCode = Convert.ToUInt64(annot.Features.GetFeatureValue("hash"));
                         hashCodes.Add(hashCode);
-                        string isLink = annot.Features.GetFeatureValue("isLink");
+                        string linkToTextRatio = annot.Features.GetFeatureValue("linkToTextRatio");
+                        string domPath = annot.Features.GetFeatureValue("domPath");
                         annot.Features.Clear();
-                        annot.Features.SetFeatureValue("isLink", isLink);
+                        annot.Features.SetFeatureValue("linkToTextRatio", linkToTextRatio);
+                        annot.Features.SetFeatureValue("domPath", domPath);
                     }
                 }
                 // write doc XML
@@ -143,9 +145,9 @@ namespace Latino.Workflows.Persistance
                 {
                     string outFileName = string.Format("{0}\\{1:yyyy}\\{1:MM}\\{1:dd}\\{1:HH}_{1:mm}_{1:ss}_{2:N}.html", mHtmlViewRoot, time, docId);
                     string path = new FileInfo(outFileName).DirectoryName.TrimEnd('\\');
-                    if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+                    if (!File.Exists(path + "\\Styles.css") || !File.Exists(path + "\\Code.js"))
                     {
-                        Directory.CreateDirectory(path);
                         string css = Utils.GetManifestResourceString(this.GetType(), "Styles.css");
                         string js = Utils.GetManifestResourceString(this.GetType(), "Code.js");
                         lock (mStaticLock)
