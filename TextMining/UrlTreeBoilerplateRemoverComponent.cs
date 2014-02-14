@@ -347,11 +347,17 @@ namespace Latino.Workflows.TextMining
             }
         }
 
+        private static bool IsLink(string linkToTextRatioStr)
+        {
+            string[] parts = linkToTextRatioStr.Split('/');
+            return parts[0] == parts[1]; // linkToTextRatio == 100%
+        }
+
         private static void SetBlockAnnotation(Document doc, UrlTree.NodeInfo[] result, HeuristicsType hType, int i, string pathInfo, TextBlock textBlock)
         {
             UrlTree.NodeInfo firstNode = result[0];
             Pair<bool, string> heurResult = BpHeuristics(result, i, hType);
-            if (heurResult.First)
+            if (heurResult.First || IsLink(textBlock.Annotation.Features.GetFeatureValue("linkToTextRatio")))
             {
                 textBlock.Annotation.Type = "TextBlock/Boilerplate";
             }

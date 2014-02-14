@@ -103,10 +103,10 @@ namespace Latino.Workflows.WebMining
                         }
                         else if (e.CurrentToken.TokenType == HtmlTokenizer.TokenType.EndTag)
                         {
-                            string endTagName = tags.Pop();
-                            if (tags.Count == 0 || endTagName != tagName)
+                            string endTagName = null;
+                            if (tags.Count == 0 || (endTagName = tags.Pop()) != tagName)
                             {
-                                mLogger.Error("ProcessDocument", "End tag does not match start tag (found {0} instead of {1}).", endTagName, tagName);
+                                mLogger.Error("ProcessDocument", "End tag does not match start tag (found {0} instead of {1}).", endTagName == null ? "nothing" : endTagName, tagName);
                                 tags.Push(endTagName);
                             }
                         }
