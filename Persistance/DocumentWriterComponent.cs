@@ -17,6 +17,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO.Compression;
 using Latino.Workflows.TextMining;
+using System.Text;
 
 namespace Latino.Workflows.Persistance
 {
@@ -25,16 +26,18 @@ namespace Latino.Workflows.Persistance
         private string mConnectionString;
         private string mXmlDataRoot;
         private string mHtmlDataRoot;
+        private string mHtmlViewRoot;
         private int mCommandTimeout;
 
         private object mLock
             = new object();
 
-        public DocumentWriterComponent(string connectionString, int cmdTimeout, string xmlDataRoot, string htmlDataRoot) : base(typeof(DocumentWriterComponent))
+        public DocumentWriterComponent(string connectionString, int cmdTimeout, string xmlDataRoot, string htmlDataRoot, string htmlViewRoot) : base(typeof(DocumentWriterComponent))
         {
             mConnectionString = connectionString;
             mXmlDataRoot = xmlDataRoot == null ? null : xmlDataRoot.TrimEnd('\\');
             mHtmlDataRoot = htmlDataRoot == null ? null : htmlDataRoot.TrimEnd('\\');
+            mHtmlViewRoot = htmlViewRoot == null ? null : htmlViewRoot.TrimEnd('\\');
             mCommandTimeout = cmdTimeout;
         }
 
@@ -138,6 +141,21 @@ namespace Latino.Workflows.Persistance
                             }
                         }
                     }
+                }
+                // write view HTML
+                if (mHtmlViewRoot != null)
+                {
+                    string outFileName = string.Format("{0}\\{1:yyyy}\\{1:MM}\\{1:dd}\\{1:HH}_{1:mm}_{1:ss}_{2:N}.html", mHtmlViewRoot, time, docId);
+                    string path = new FileInfo(outFileName).DirectoryName.TrimEnd('\\');
+                    if (!Directory.Exists(path))
+                    {
+                        lock (mLock) { if (!Directory.Exists(path)) { Directory.CreateDirectory(path); } }
+                        string css = Utils.GetManifestResourceString(this.GetType(), "Styles.css");
+                        string js = Utils.GetManifestResourceString(this.GetType(), "Code.js");
+                        File.WriteAllText(path + "\\Styles.css", css);
+                        File.WriteAllText(path + "\\Code.js", js);
+                    }
+                    File.WriteAllText(outFileName, doc.GetHtml(/*inlineCss=*/false, /*inlineJs=*/false), Encoding.UTF8);
                 }
                 // prepare for bulk write
                 if (mConnectionString != null) 

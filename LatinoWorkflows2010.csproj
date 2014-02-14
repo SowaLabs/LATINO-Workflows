@@ -60,9 +60,11 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="DocumentStreamReaderComponent.cs" />
     <Compile Include="DocumentFilterComponent.cs" />
     <Compile Include="PassOnComponent.cs" />
@@ -71,8 +73,8 @@
     <Compile Include="Semantics\EntityRecognitionComponent.cs" />
     <Compile Include="Semantics\EntityRecognitionEngine.cs" />
     <Compile Include="StreamDataProducer.cs" />
-    <Compile Include="Persistance\DocumentCorpusWriterComponent.cs" />
     <Compile Include="TextMining\BoilerplateRemoverComponent.cs" />
+    <Compile Include="TextMining\DocumentCorpus\DocumentSerializer.cs" />
     <Compile Include="TextMining\HtmlTokenizerComponent.cs" />
     <Compile Include="TextMining\DocumentCorpus\Tree.cs" />
     <Compile Include="TextMining\EnglishLemmatizerComponent.cs" />
@@ -106,6 +108,9 @@
     <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\DocumentTemplate.htm" />
     <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\IndexTemplate.htm" />
     <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\Style.css" />
+    <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\DocumentTemplateNew.html" />
+    <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\Styles.css" />
+    <EmbeddedResource Include="TextMining\DocumentCorpus\Resources\Code.js" />
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -123,9 +128,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Persistance\CleanupDb.sql" />
     <None Include="Persistance\CreateTables.sql" />
-    <None Include="Persistance\CreateTablesNew.sql" />
     <EmbeddedResource Include="TextMining\Resources\EnglishPOS.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishSD.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishTok.nbin" />

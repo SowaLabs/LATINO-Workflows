@@ -22,6 +22,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Text;
 using System.IO.Compression;
+using System.Web.Script.Serialization;
 
 namespace Latino.Workflows.TextMining
 {
@@ -236,6 +237,10 @@ namespace Latino.Workflows.TextMining
                 else if (reader.NodeType == XmlNodeType.Element && reader.Name == "Text")
                 {
                     mText = Utils.XmlReadValue(reader, "Text");
+                    if (!mText.Val.Contains("\r\n"))
+                    {
+                        mText = mText.Val.Replace("\n", "\r\n");
+                    }
                 }
                 else if (reader.NodeType == XmlNodeType.Element && reader.Name == "Annotation" && !reader.IsEmptyElement)
                 {
@@ -720,6 +725,39 @@ namespace Latino.Workflows.TextMining
         public void WriteGateXml(XmlWriter writer)
         {
             WriteGateXml(writer, /*writeTopElement=*/false, /*removeBoilerplate*/false); // throws ArgumentNullException
+        }
+
+        // *** Output HTML (new) ***
+
+        public string GetHtml(bool inlineCss, bool inlineJs)
+        {
+            ArrayList<object> treeItems, features, content;
+            DocumentSerializer.SerializeDocument(this, out treeItems, out features, out content);
+            string template = Utils.GetManifestResourceString(this.GetType(), "DocumentTemplateNew.html");
+            JavaScriptSerializer jsSer = new JavaScriptSerializer();
+            template = template.Replace("${Title}", HttpUtility.HtmlEncode(Name));
+            template = template.Replace("${TreeItemsParam}", jsSer.Serialize(treeItems));
+            template = template.Replace("${FeaturesParam}", jsSer.Serialize(features));
+            template = template.Replace("${ContentParam}", jsSer.Serialize(content));
+            if (inlineCss)
+            {
+                string css = "<style type=\"text/css\">" + Utils.GetManifestResourceString(this.GetType(), "Styles.css") + "</style>";
+                template = template.Replace("${Css}", css);
+            }
+            else
+            {
+                template = template.Replace("${Css}", "<link href=\"Styles.css\" rel=\"stylesheet\"/>");
+            }
+            if (inlineJs)
+            {
+                string js = "<script type=\"text/javascript\">" + Utils.GetManifestResourceString(this.GetType(), "Code.js") + "</script>";
+                template = template.Replace("${Js}", js);
+            }
+            else
+            {
+                template = template.Replace("${Js}", "<script src=\"Code.js\"></script>");
+            }
+            return template;
         }
 
         // *** Output HTML ***
