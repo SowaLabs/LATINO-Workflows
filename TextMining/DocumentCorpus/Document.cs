@@ -384,7 +384,7 @@ namespace Latino.Workflows.TextMining
             {
                 XmlReaderSettings xmlSettings = new XmlReaderSettings();
                 xmlSettings.CheckCharacters = false;
-                using (XmlReader xmlReader = XmlReader.Create(new XmlTextReader(inStream), xmlSettings))
+                using (XmlReader xmlReader = XmlReader.Create(new XmlTextReader(gzStream), xmlSettings))
                 {
                     ReadXml(xmlReader);
                 }
