@@ -107,6 +107,9 @@ namespace Latino.Workflows.TextMining
         private static int mExactDuplicateThreshold // TODO: make configurable
             = 100 - 1;
 
+        private static Set<string> mSkipTags
+            = new Set<string>("script,noscript,style,form,fieldset,legend,label,input,button,select,datalist,optgroup,option,textarea,keygen,output,progress,meter,details,summary,menuitem,menu,img,iframe,embed,object,param,video,audio,source,track,canvas,map,area,svg,math,nav,aside,header,footer,address".Split(','));
+
         public UrlTreeBoilerplateRemoverComponent() : base(typeof(UrlTreeBoilerplateRemoverComponent))
         {
             mBlockSelector = "TextBlock";
@@ -357,7 +360,8 @@ namespace Latino.Workflows.TextMining
         {
             UrlTree.NodeInfo firstNode = result[0];
             Pair<bool, string> heurResult = BpHeuristics(result, i, hType);
-            if (heurResult.First || IsLink(textBlock.Annotation.Features.GetFeatureValue("linkToTextRatio")))
+            Set<string> domPath = new Set<string>(textBlock.Annotation.Features.GetFeatureValue("domPath").Split('/'));
+            if (heurResult.First || IsLink(textBlock.Annotation.Features.GetFeatureValue("linkToTextRatio")) || Set<string>.Intersection(domPath, mSkipTags).Count > 0)
             {
                 textBlock.Annotation.Type = "TextBlock/Boilerplate";
             }
