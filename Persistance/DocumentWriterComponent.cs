@@ -44,24 +44,23 @@ namespace Latino.Workflows.Persistance
         private static DataTable CreateTable()
         {
             DataTable t = new DataTable();
-            t.Columns.Add("id", typeof(Guid));
+            t.Columns.Add("guid", typeof(Guid));
             t.Columns.Add("hash", typeof(Guid));
-            t.Columns.Add("name", typeof(string));
+            t.Columns.Add("title", typeof(string));
             t.Columns.Add("description", typeof(string));
-            //t.Columns.Add("debug", typeof(string));
             t.Columns.Add("snippet", typeof(string));
             t.Columns.Add("category", typeof(string));
             t.Columns.Add("link", typeof(string));
             t.Columns.Add("responseUrl", typeof(string));
             t.Columns.Add("urlkey", typeof(string));
-            t.Columns.Add("acqTime", typeof(DateTime));
-            t.Columns.Add("pubTimeStr", typeof(string));
+            t.Columns.Add("time", typeof(DateTime));
+            t.Columns.Add("pubDate", typeof(string));
             t.Columns.Add("mimeType", typeof(string));
             t.Columns.Add("charSet", typeof(string));
             t.Columns.Add("contentLength", typeof(int));
-            t.Columns.Add("domain", typeof(string));
-            t.Columns.Add("bpCharCount", typeof(int));
-            t.Columns.Add("contentCharCount", typeof(int));
+            t.Columns.Add("domainName", typeof(string));
+            t.Columns.Add("bprBoilerplateCharCount", typeof(int));
+            t.Columns.Add("bprContentCharCount", typeof(int));
             t.Columns.Add("unseenContentCharCount", typeof(int));
             t.Columns.Add("rev", typeof(int));
             t.Columns.Add("fileName", typeof(string));
@@ -72,7 +71,7 @@ namespace Latino.Workflows.Persistance
         private static DataTable CreateTextBlocksTable()
         {
             DataTable t = new DataTable();
-            t.Columns.Add("docId", typeof(Guid));
+            t.Columns.Add("docGuid", typeof(Guid));
             t.Columns.Add("hashCodes", typeof(byte[]));
             t.Columns.Add("hashCodesBase64", typeof(string));
             return t;
@@ -97,6 +96,7 @@ namespace Latino.Workflows.Persistance
                 d.Features.RemoveFeature("raw");
                 DateTime timeEnd = DateTime.Parse(c.Features.GetFeatureValue("timeEnd"));
                 d.Features.SetFeatureValue("oldId", string.Format("{0:HH}_{0:mm}_{0:ss}_{1:N}_{2:N}", timeEnd, cGuid, dGuid));
+                d.Features.SetFeatureValue("hash", dGuid.ToString("N"));
                 d.Features.SetFeatureValue("guid", docId.ToString("N"));
                 d.Features.SetFeatureValue("rssUrl", c.Features.GetFeatureValue("sourceUrl"));
                 d.Features.SetFeatureValue("siteId", c.Features.GetFeatureValue("siteId"));
@@ -167,7 +167,6 @@ namespace Latino.Workflows.Persistance
                         dGuid,
                         Utils.Truncate(d.Name, 400),
                         Utils.Truncate(d.Features.GetFeatureValue("description"), 400),
-                        //c.Features.GetFeatureValue("debug"),
                         Utils.Truncate(d.Text, 1000),
                         Utils.Truncate(d.Features.GetFeatureValue("category"), 400),
                         Utils.Truncate(d.Features.GetFeatureValue("link"), 400),

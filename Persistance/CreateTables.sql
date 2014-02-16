@@ -18,31 +18,30 @@ SET ANSI_PADDING ON
 GO
 
 CREATE TABLE [dbo].[Documents](
-	[id] [uniqueidentifier] NULL,
+	[guid] [uniqueidentifier] NULL,
 	[hash] [uniqueidentifier] NULL,
-	[name] [nvarchar](400) NULL,
+	[title] [nvarchar](400) NULL,
 	[description] [nvarchar](400) NULL,
-	--[debug] [ntext] NULL,
 	[snippet] [nvarchar](1000) NULL,
 	[category] [nvarchar](400) NULL,
 	[link] [varchar](400) NULL,
 	[responseUrl] [varchar](400) NULL,
 	[urlKey] [varchar](400) NULL,
-	[acqTime] [datetime] NULL,
-	[pubTimeStr] [char](100) NULL,
+	[time] [datetime] NULL,
+	[pubDate] [char](100) NULL,
 	[mimeType] [varchar](80) NULL,
 	[charSet] [varchar](40) NULL,
 	[contentLength] [int] NULL,
-	[domain] [varchar](100) NULL,
-	[bpCharCount] [int] NULL,
-	[contentCharCount] [int] NULL,
+	[domainName] [varchar](100) NULL,
+	[bprBoilerplateCharCount] [int] NULL,
+	[bprContentCharCount] [int] NULL,
 	[unseenContentCharCount] [int] NULL,
 	[rev] [int] NULL,
 	[fileName] [varchar](100) NULL,
 	[siteId] [nvarchar](100) NULL,
 	CONSTRAINT [UQ_Documents_id] UNIQUE NONCLUSTERED 
 	(
-		[id] ASC
+		[guid] ASC
 	) WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = ON, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 
@@ -62,7 +61,7 @@ SET ANSI_PADDING ON
 GO
 
 CREATE TABLE [dbo].[TextBlocks](
-	[docId] [uniqueidentifier] NOT NULL,
+	[docGuid] [uniqueidentifier] NOT NULL,
 	[hashCodes] [varbinary](max) NOT NULL,
 	[hashCodesBase64] [text] NOT NULL
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]

@@ -183,10 +183,10 @@ namespace Latino.Workflows.TextMining
                 dbConnection.Open();
                 DataTable domainsTbl;
                 using (SqlCommand sqlCmd = new SqlCommand(string.Format(@"
-                    SELECT DISTINCT domain FROM 
-                    (SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY MAX(acqTime) DESC) x 
+                    SELECT DISTINCT domainName FROM 
+                    (SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY MAX(time) DESC) x 
                     UNION 
-                    SELECT * FROM (SELECT TOP {0} domain FROM Documents WHERE domain IS NOT NULL GROUP BY domain ORDER BY COUNT(*) DESC) y) z
+                    SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY COUNT(*) DESC) y) z
                     ", 3000/*make this configurable*/), dbConnection))
                 {
                     domainsTbl = new DataTable();
@@ -197,14 +197,14 @@ namespace Latino.Workflows.TextMining
                 }
                 foreach (DataRow row in domainsTbl.Rows)
                 {
-                    string domainName = (string)row["domain"];
+                    string domainName = (string)row["domainName"];
                     DataTable urlInfoTbl;
                     using (SqlCommand sqlCmd = new SqlCommand(string.Format(string.Format(@"
-                        SELECT TOP {0} d.id, d.acqTime, d.responseUrl, d.urlKey, d.rev, d.domain, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.acqTime DESC, dd.rev DESC) AS maxRev, tb.hashCodesBase64 FROM Documents d 
-                        INNER JOIN TextBlocks tb ON d.id = tb.docId WHERE d.domain = @domain ORDER BY d.acqTime DESC
+                        SELECT TOP {0} d.guid, d.time, d.responseUrl, d.urlKey, d.rev, d.domainName, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.time DESC, dd.rev DESC) AS maxRev, tb.hashCodesBase64 FROM Documents d 
+                        INNER JOIN TextBlocks tb ON d.guid = tb.docGuid WHERE d.domainName = @domainName ORDER BY d.time DESC
                         ", mMaxQueueSize)), dbConnection))
                     {
-                        sqlCmd.AssignParams("domain", domainName);
+                        sqlCmd.AssignParams("domainName", domainName);
                         urlInfoTbl = new DataTable();
                         using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
                         {
@@ -213,7 +213,7 @@ namespace Latino.Workflows.TextMining
                     }
                     if (urlInfoTbl.Rows.Count == 0) { continue; }
                     Pair<UrlTree, Queue<TextBlockHistoryEntry>> textBlockInfo = GetTextBlockInfo(domainName);
-                    DateTime then = (DateTime)urlInfoTbl.Rows[0]["acqTime"] - new TimeSpan(mHistoryAgeDays, 0, 0, 0);
+                    DateTime then = (DateTime)urlInfoTbl.Rows[0]["time"] - new TimeSpan(mHistoryAgeDays, 0, 0, 0);
                     domainCount++;
                     Console.WriteLine("* " + domainName + string.Format(" ({0}/{1})", domainCount, domainsTbl.Rows.Count));
                     Pair<Dictionary<string, Ref<int>>, Queue<UrlHistoryEntry>> urlInfo = GetUrlInfo(domainName);
@@ -222,8 +222,8 @@ namespace Latino.Workflows.TextMining
                         int rev = (int)urlInfoTbl.Rows[j]["rev"];
                         int maxRev = (int)urlInfoTbl.Rows[j]["maxRev"];
                         string urlKey = (string)urlInfoTbl.Rows[j]["urlKey"];
-                        Guid docId = (Guid)urlInfoTbl.Rows[j]["id"];
-                        DateTime time = (DateTime)urlInfoTbl.Rows[j]["acqTime"];
+                        Guid docId = (Guid)urlInfoTbl.Rows[j]["guid"];
+                        DateTime time = (DateTime)urlInfoTbl.Rows[j]["time"];
                         if (time >= then)
                         {
                             // URL cache
