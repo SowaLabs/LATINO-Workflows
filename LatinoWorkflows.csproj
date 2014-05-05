@@ -118,11 +118,11 @@
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SemWeb\SemWeb.csproj">
+    <ProjectReference Include="..\SemWeb\SemWeb.csproj">
       <Project>{4570B82E-34F5-4630-A44A-A1E3D92FD18C}</Project>
       <Name>SemWeb</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\SharpNLP\OpenNLP\OpenNLP\OpenNLP.csproj">
+    <ProjectReference Include="..\SharpNLP\OpenNLP\OpenNLP\OpenNLP.csproj">
       <Project>{B70185DF-81FD-4417-914F-7C90E65E7D9F}</Project>
       <Name>OpenNLP</Name>
     </ProjectReference>
@@ -141,9 +141,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
@@ -159,6 +156,9 @@
       <ProductName>Windows Installer 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

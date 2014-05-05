@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using Latino.WebMining;
-using Latino.Persistance;
+//using Latino.Persistance;
 using System.Data.SqlClient;
 
 namespace Latino.Workflows.TextMining
