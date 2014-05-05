@@ -55,19 +55,24 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Avro">
+      <HintPath>packages\avro\net40\Avro.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
     <Compile Include="DocumentStreamReaderComponent.cs" />
     <Compile Include="DocumentFilterComponent.cs" />
     <Compile Include="PassOnComponent.cs" />
+    <Compile Include="Persistance\Avro\AvroFile.cs" />
+    <Compile Include="Persistance\Avro\AvroRepository.cs" />
+    <Compile Include="Persistance\Avro\DocumentAvro.cs" />
+    <Compile Include="Persistance\Avro\Preconditions.cs" />
     <Compile Include="Persistance\DocumentWriterComponent.cs" />
     <Compile Include="Semantics\DocumentCategorizerComponent.cs" />
     <Compile Include="Semantics\EntityRecognitionComponent.cs" />
@@ -128,6 +133,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Persistance\Avro\Schema\news_document.avsc" />
     <None Include="Persistance\CreateTables.sql" />
     <EmbeddedResource Include="TextMining\Resources\EnglishPOS.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishSD.nbin" />
