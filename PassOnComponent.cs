@@ -8,6 +8,8 @@
  *
  *  Author:  Miha Grcar
  *
+ *  License: MIT (http://opensource.org/licenses/MIT)
+ *
  ***************************************************************************/
 
 namespace Latino.Workflows.TextMining

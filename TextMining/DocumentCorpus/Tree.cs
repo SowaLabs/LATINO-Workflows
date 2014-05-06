@@ -8,6 +8,8 @@
  *
  *  Author:  Jasmina Smailovic
  *
+ *  License: MIT (http://opensource.org/licenses/MIT)
+ *
  ***************************************************************************/
 
 using System.Collections.Generic;

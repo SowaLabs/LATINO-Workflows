@@ -8,6 +8,8 @@
  *
  *  Authors: Borut Sluban, Miha Grcar
  *
+ *  License: MIT (http://opensource.org/licenses/MIT)
+ *
  ***************************************************************************/
 
 using System;
