@@ -132,7 +132,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Persistance\CreateTables.sql" />
     <EmbeddedResource Include="TextMining\Resources\EnglishPOS.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishSD.nbin" />
     <EmbeddedResource Include="TextMining\Resources\EnglishTok.nbin" />
