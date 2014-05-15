@@ -261,7 +261,7 @@ namespace Latino.Workflows.WebMining
                         itemAttr.Add("responseUrl", responseUrl);
                         itemAttr.Add("mimeType", mimeType);
                         itemAttr.Add("contentType", contentType.ToString());
-                        if (charSet == null) { charSet = Config.RssFeedComponent_DefaultHtmlEncoding; }
+                        if (charSet == null) { charSet = Config.rssReaderDefaultHtmlEncoding; }
                         itemAttr.Add("charSet", charSet);
                         itemAttr.Add("contentLength", bytes.Length.ToString());
                         if (contentType == ContentType.Binary)
@@ -438,7 +438,7 @@ namespace Latino.Workflows.WebMining
                         {
                             codePage = Encoding.GetEncoding(charSet);
                         }
-                        if (codePage == null) { codePage = Encoding.GetEncoding(Config.RssFeedComponent_DefaultRssXmlEncoding); }
+                        if (codePage == null) { codePage = Encoding.GetEncoding(Config.rssReaderDefaultRssXmlEncoding); }
                         xml = FixXml(codePage.GetString(xmlBytes));                        
                     }
                     catch (Exception e)
