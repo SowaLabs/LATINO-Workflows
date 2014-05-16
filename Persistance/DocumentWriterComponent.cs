@@ -75,7 +75,7 @@ namespace Latino.Workflows.Persistance
             DataTable t = new DataTable();
             t.Columns.Add("docGuid", typeof(Guid));
             t.Columns.Add("hashCodes", typeof(byte[]));
-            t.Columns.Add("hashCodesBase64", typeof(string));
+            //t.Columns.Add("hashCodesBase64", typeof(string));
             return t;
         }
 
@@ -191,11 +191,11 @@ namespace Latino.Workflows.Persistance
                     hashCodes.Save(memSer);
                     byte[] hashCodesBinary = new byte[memSer.Stream.Position];
                     Array.Copy(((MemoryStream)memSer.Stream).GetBuffer(), hashCodesBinary, hashCodesBinary.Length);
-                    string hashCodesBase64 = Convert.ToBase64String(hashCodesBinary, 0, (int)memSer.Stream.Position); // *** remove this after the transition
+                    //string hashCodesBase64 = Convert.ToBase64String(hashCodesBinary, 0, (int)memSer.Stream.Position); // *** remove this after the transition
                     dtTextBlocks.Rows.Add(
                         new Guid(d.Features.GetFeatureValue("guid")),
-                        hashCodesBinary,
-                        hashCodesBase64
+                        hashCodesBinary//,
+                        //hashCodesBase64
                         );
                 }
             }

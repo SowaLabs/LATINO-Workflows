@@ -17,7 +17,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using Latino.WebMining;
-//using Latino.Persistance;
 using System.Data.SqlClient;
 
 namespace Latino.Workflows.TextMining
@@ -185,11 +184,11 @@ namespace Latino.Workflows.TextMining
                 dbConnection.Open();
                 DataTable domainsTbl;
                 using (SqlCommand sqlCmd = new SqlCommand(string.Format(@"
-                    SELECT DISTINCT domainName FROM 
-                    (SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY MAX(time) DESC) x 
-                    UNION 
-                    SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY COUNT(*) DESC) y) z
-                    ", 3000/*make this configurable*/), dbConnection))
+                    SELECT DISTINCT domainName FROM (
+                        SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY MAX(time) DESC) x 
+                        UNION 
+                        SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY COUNT(*) DESC) y
+                    ) xy", 3000/*make this configurable*/), dbConnection))
                 {
                     domainsTbl = new DataTable();
                     using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
@@ -202,7 +201,7 @@ namespace Latino.Workflows.TextMining
                     string domainName = (string)row["domainName"];
                     DataTable urlInfoTbl;
                     using (SqlCommand sqlCmd = new SqlCommand(string.Format(string.Format(@"
-                        SELECT TOP {0} d.guid, d.time, d.responseUrl, d.urlKey, d.rev, d.domainName, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.time DESC, dd.rev DESC) AS maxRev, tb.hashCodesBase64 FROM Documents d 
+                        SELECT TOP {0} d.guid, d.time, d.responseUrl, d.urlKey, d.rev, d.domainName, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.time DESC, dd.rev DESC) AS maxRev, tb.hashCodes FROM Documents d 
                         INNER JOIN TextBlocks tb ON d.guid = tb.docGuid WHERE d.domainName = @domainName ORDER BY d.time DESC
                         ", mMaxQueueSize)), dbConnection))
                     {
@@ -240,9 +239,10 @@ namespace Latino.Workflows.TextMining
                                 urlInfo.Second.Enqueue(new UrlHistoryEntry(/*urlKey=*/null, time)); // dummy entry into the URL queue (to ensure sync with the text blocks queue)
                             }
                             // URL tree
-                            string hashCodesBase64 = (string)urlInfoTbl.Rows[j]["hashCodesBase64"];
+                            //string hashCodesBase64 = (string)urlInfoTbl.Rows[j]["hashCodesBase64"];
                             string responseUrl = (string)urlInfoTbl.Rows[j]["responseUrl"];
-                            byte[] buffer = Convert.FromBase64String(hashCodesBase64);
+                            //byte[] buffer = Convert.FromBase64String(hashCodesBase64);
+                            byte[] buffer = (byte[])urlInfoTbl.Rows[j]["hashCodes"];
                             BinarySerializer memSer = new BinarySerializer(new MemoryStream(buffer));
                             ArrayList<ulong> hashCodes = new ArrayList<ulong>(memSer);
                             bool fullPath = urlKey.Contains("?");
