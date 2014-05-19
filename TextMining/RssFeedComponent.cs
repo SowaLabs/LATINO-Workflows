@@ -24,6 +24,7 @@ using System.Threading;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text.RegularExpressions;
+using System.Reflection;
 using Latino.Web;
 using Latino.Workflows.TextMining;
 using Latino.TextMining;
@@ -91,6 +92,8 @@ namespace Latino.Workflows.WebMining
 
         private Language? mRssXmlCodePageDetectorLanguage
             = null;
+        private static LanguageDetector mCodePageDetector
+            = new LanguageDetector();
 
         private static ContentType GetContentType(string mimeType)
         {
@@ -109,6 +112,21 @@ namespace Latino.Workflows.WebMining
             else
             {
                 return ContentType.Binary;
+            }
+        }
+
+        static RssFeedComponent() 
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string resName in assembly.GetManifestResourceNames())
+            {
+                if (resName.EndsWith(".ldp"))
+                {
+                    BinarySerializer ser = new BinarySerializer(assembly.GetManifestResourceStream(resName));
+                    LanguageProfile langProfile = new LanguageProfile(ser);
+                    ser.Close();
+                    mCodePageDetector.AddLanguageProfile(langProfile);
+                }
             }
         }
 
@@ -419,8 +437,7 @@ namespace Latino.Workflows.WebMining
                                 // extract texts
                                 string content = ExtractRssXmlContent(xml);
                                 // try to guess code page
-                                LanguageDetector ld = LanguageDetector.GetLanguageDetectorPrebuilt();
-                                ArrayList<KeyDat<double, LanguageProfile>> ldResult = ld.DetectLanguageAll(content);
+                                ArrayList<KeyDat<double, LanguageProfile>> ldResult = mCodePageDetector.DetectLanguageAll(content);
                                 try
                                 {
                                     LanguageProfile bestLanguageProfile = ldResult
@@ -429,7 +446,6 @@ namespace Latino.Workflows.WebMining
                                         .First()
                                         .Second;
                                     codePage = bestLanguageProfile.CodePage;
-                                    //channelAttr["debug"] += codePage.WebName + " " + url;
                                 }
                                 catch { }
                             }

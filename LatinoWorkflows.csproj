@@ -157,6 +157,39 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-ibm852.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-ibm870.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-iso-8859-2.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-utf-8.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-windows-1250.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\sl-x-mac-ce.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\tr-ibm857.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\tr-iso-8859-9.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\tr-utf-8.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\tr-windows-1254.ldp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TextMining\Resources\tr-x-mac-turkish.ldp" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
