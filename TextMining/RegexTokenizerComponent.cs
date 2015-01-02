@@ -61,8 +61,7 @@ namespace Latino.Workflows.TextMining
                 TextBlock[] textBlocks = document.GetAnnotatedBlocks(mBlockSelector);
                 foreach (TextBlock textBlock in textBlocks)
                 {
-                    mTokenizer.Text = textBlock.Text;
-                    for (RegexTokenizer.Enumerator e = (RegexTokenizer.Enumerator)mTokenizer.GetEnumerator(); e.MoveNext();)
+                    for (RegexTokenizer.Enumerator e = (RegexTokenizer.Enumerator)mTokenizer.GetTokens(textBlock.Text).GetEnumerator(); e.MoveNext(); )
                     {
                         document.AddAnnotation(new Annotation(textBlock.SpanStart + e.CurrentTokenIdx, textBlock.SpanStart + e.CurrentTokenIdx + e.Current.Length - 1, "Token"));
                     }

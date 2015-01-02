@@ -17,7 +17,9 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -30,7 +32,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -118,17 +119,17 @@
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SemWeb\SemWeb.csproj">
+    <ProjectReference Include="..\Latino\Latino.Net40.csproj">
+      <Project>{5B86AAD5-3FEA-487C-A518-4F846AF09E18}</Project>
+      <Name>Latino.Net40</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SemWeb\SemWeb2010.csproj">
       <Project>{4570B82E-34F5-4630-A44A-A1E3D92FD18C}</Project>
-      <Name>SemWeb</Name>
+      <Name>SemWeb2010</Name>
     </ProjectReference>
-    <ProjectReference Include="..\SharpNLP\OpenNLP\OpenNLP\OpenNLP.csproj">
+    <ProjectReference Include="..\SharpNLP\OpenNLP\OpenNLP\OpenNLP2010.csproj">
       <Project>{B70185DF-81FD-4417-914F-7C90E65E7D9F}</Project>
-      <Name>OpenNLP</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Latino\Latino.csproj">
-      <Project>{FFA3AB32-D56A-4544-BCF2-CBC51B57550B}</Project>
-      <Name>Latino</Name>
+      <Name>OpenNLP2010</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
