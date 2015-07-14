@@ -441,6 +441,7 @@ namespace Latino.Workflows.TextMining
             DocumentSerializer.SerializeDocument(this, out treeItems, out features, out content);
             string template = Utils.GetManifestResourceString(this.GetType(), "DocumentTemplateNew.html");
             JavaScriptSerializer jsSer = new JavaScriptSerializer();
+            jsSer.MaxJsonLength = int.MaxValue;
             template = template.Replace("${Title}", HttpUtility.HtmlEncode(Name));
             template = template.Replace("${TreeItemsParam}", jsSer.Serialize(treeItems));
             template = template.Replace("${FeaturesParam}", jsSer.Serialize(features));
