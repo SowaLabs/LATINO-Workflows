@@ -72,7 +72,7 @@ namespace Latino.Workflows.TextMining
             get { return mFeaturesInterface; }
         }
 
-        internal TextBlock GetAnnotatedBlock(Ref<string> text)
+        public TextBlock GetAnnotatedBlock(Ref<string> text)
         {
             TextBlock block = new TextBlock(mSpanStart, mSpanEnd, mType, text.Val.Substring(mSpanStart, mSpanEnd - mSpanStart + 1), this);
             return block;
