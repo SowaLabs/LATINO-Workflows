@@ -42,8 +42,8 @@ namespace Latino.Workflows.TextMining
 
         public bool IgnoreUnknownTokens
         {
-            get { return mTokenizer.IgnoreUnknownTokens; }
-            set { mTokenizer.IgnoreUnknownTokens = value; }
+            get { return mTokenizer.IgnoreUnmatchedTokens; }
+            set { mTokenizer.IgnoreUnmatchedTokens = value; }
         }
 
         public RegexOptions TokenRegexOptions
