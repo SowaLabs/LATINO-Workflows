@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using Latino.WebMining;
-using System.Data.SqlClient;
+using Npgsql;
 
 namespace Latino.Workflows.TextMining
 {
@@ -179,19 +179,19 @@ namespace Latino.Workflows.TextMining
             mUrlInfo.Clear();
             mTextBlockInfo.Clear();
             int domainCount = 0;
-            using (SqlConnection dbConnection = new SqlConnection(dbConnectionString))
+            using (NpgsqlConnection dbConnection = new NpgsqlConnection(dbConnectionString))
             {
                 dbConnection.Open();
                 DataTable domainsTbl;
-                using (SqlCommand sqlCmd = new SqlCommand(string.Format(@"
-                    SELECT DISTINCT domainName FROM (
-                        SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY MAX(time) DESC) x 
+                using (NpgsqlCommand sqlCmd = new NpgsqlCommand(string.Format(@"
+                    SELECT DISTINCT ""domainName"" FROM (
+                        SELECT * FROM (SELECT ""domainName"" FROM ""Documents"" WHERE ""domainName"" IS NOT NULL GROUP BY ""domainName"" ORDER BY MAX(time) DESC LIMIT {0}) x 
                         UNION 
-                        SELECT * FROM (SELECT TOP {0} domainName FROM Documents WHERE domainName IS NOT NULL GROUP BY domainName ORDER BY COUNT(*) DESC) y
-                    ) xy", 3000/*make this configurable*/), dbConnection))
+                        SELECT * FROM (SELECT ""domainName"" FROM ""Documents"" WHERE ""domainName"" IS NOT NULL GROUP BY ""domainName"" ORDER BY COUNT(*) DESC LIMIT {0}) y
+                    ) xy;", 3000/*make this configurable*/), dbConnection))
                 {
                     domainsTbl = new DataTable();
-                    using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
+                    using (NpgsqlDataReader sqlReader = sqlCmd.ExecuteReader())
                     {
                         domainsTbl.Load(sqlReader);
                     }
@@ -200,14 +200,14 @@ namespace Latino.Workflows.TextMining
                 {
                     string domainName = (string)row["domainName"];
                     DataTable urlInfoTbl;
-                    using (SqlCommand sqlCmd = new SqlCommand(string.Format(string.Format(@"
-                        SELECT TOP {0} d.guid, d.time, d.responseUrl, d.urlKey, d.rev, d.domainName, (SELECT TOP 1 dd.rev from Documents dd WHERE dd.urlKey = d.urlKey ORDER BY dd.time DESC, dd.rev DESC) AS maxRev, tb.hashCodes FROM Documents d 
-                        INNER JOIN TextBlocks tb ON d.guid = tb.docGuid WHERE d.domainName = @domainName ORDER BY d.time DESC
+                    using (NpgsqlCommand sqlCmd = new NpgsqlCommand(string.Format(string.Format(@"
+                        SELECT d.guid, d.time, d.""responseUrl"", d.""urlKey"", d.rev, d.""domainName"", (SELECT dd.rev FROM ""Documents"" dd WHERE dd.""urlKey"" = d.""urlKey"" ORDER BY dd.time DESC, dd.rev DESC LIMIT 1) AS ""maxRev"", tb.""hashCodes"" FROM ""Documents"" d 
+                        INNER JOIN ""TextBlocks"" tb ON d.guid = tb.""docGuid"" WHERE d.""domainName"" = @domainName ORDER BY d.time DESC LIMIT {0};
                         ", mMaxQueueSize)), dbConnection))
                     {
-                        sqlCmd.AssignParams("domainName", domainName);
+                        WorkflowUtils.AssignParamsToCommand(sqlCmd, "domainName", domainName);
                         urlInfoTbl = new DataTable();
-                        using (SqlDataReader sqlReader = sqlCmd.ExecuteReader())
+                        using (NpgsqlDataReader sqlReader = sqlCmd.ExecuteReader())
                         {
                             urlInfoTbl.Load(sqlReader);
                         }

@@ -22,12 +22,12 @@ using System.Text;
 using System.Net;
 using System.Threading;
 using System.Data;
-using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using Latino.Web;
 using Latino.Workflows.TextMining;
 using Latino.TextMining;
+using Npgsql;
 
 namespace Latino.Workflows.WebMining
 {
@@ -591,16 +591,16 @@ namespace Latino.Workflows.WebMining
             {
                 if (mHistorySize > 0)
                 {
-                    using (SqlConnection connection = new SqlConnection(dbConnectionString))
+                    using (NpgsqlConnection connection = new NpgsqlConnection(dbConnectionString))
                     {
                         connection.Open();
                         DataTable table = new DataTable();
                         if (siteId == null)
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} hash FROM Documents WHERE siteId IS NULL ORDER BY time DESC", mHistorySize), connection))
+                            using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format(@"SELECT hash FROM ""Documents"" WHERE ""siteId"" IS NULL ORDER BY time DESC LIMIT {0};", mHistorySize), connection))
                             {
                                 cmd.CommandTimeout = 0;
-                                using (SqlDataReader reader = cmd.ExecuteReader()) 
+                                using (NpgsqlDataReader reader = cmd.ExecuteReader()) 
                                 { 
                                     table.Load(reader); 
                                 }
@@ -608,11 +608,11 @@ namespace Latino.Workflows.WebMining
                         }
                         else
                         {
-                            using (SqlCommand cmd = new SqlCommand(string.Format("SELECT TOP {0} hash FROM Documents WHERE siteId = @siteId ORDER BY time DESC", mHistorySize), connection))
+                            using (NpgsqlCommand cmd = new NpgsqlCommand(string.Format(@"SELECT hash FROM ""Documents"" WHERE ""siteId"" = @siteId ORDER BY time DESC LIMIT {0};", mHistorySize), connection))
                             {
                                 cmd.CommandTimeout = 0;
                                 WorkflowUtils.AssignParamsToCommand(cmd, "siteId", Utils.Truncate(siteId, 400));
-                                using (SqlDataReader reader = cmd.ExecuteReader())
+                                using (NpgsqlDataReader reader = cmd.ExecuteReader())
                                 {
                                     table.Load(reader);
                                 }

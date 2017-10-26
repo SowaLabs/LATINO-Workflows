@@ -13,13 +13,14 @@
  ***************************************************************************/
 
 using System;
+using System.Text;
 using System.Security.Cryptography;
 using System.IO;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO.Compression;
 using Latino.Workflows.TextMining;
-using System.Text;
+using Npgsql;
 
 namespace Latino.Workflows.Persistance
 {
@@ -199,19 +200,66 @@ namespace Latino.Workflows.Persistance
                         );
                 }
             }
-            // bulk write to database
+            // write to database
             if (mConnectionString != null && dt.Rows.Count > 0)
             {
-                using (SqlConnection connection = new SqlConnection(mConnectionString))
+                using (NpgsqlConnection connection = new NpgsqlConnection(mConnectionString))
                 {
                     connection.Open();
-                    using (SqlBulkCopy bulkWriter = new SqlBulkCopy(connection))
+                    // upsert document metadata
+                    foreach (DataRow row in dt.Rows)
                     {
-                        bulkWriter.BulkCopyTimeout = mCommandTimeout;
-                        bulkWriter.DestinationTableName = "Documents";
-                        bulkWriter.WriteToServerRetryOnDeadlock(dt);
-                        bulkWriter.DestinationTableName = "TextBlocks";
-                        bulkWriter.WriteToServerRetryOnDeadlock(dtTextBlocks);
+                        using (NpgsqlCommand cmd = new NpgsqlCommand(@"
+                            INSERT INTO ""Documents"" (guid, hash, title, description, snippet, category, link, ""responseUrl"", ""urlKey"", time, 
+                                ""pubDate"", ""mimeType"", ""charSet"", ""contentLength"", ""domainName"", ""bprBoilerplateCharCount"", ""bprContentCharCount"", ""unseenContentCharCount"",
+                                rev, ""fileName"", ""siteId"") 
+                            VALUES (@guid, @hash, @title, @description, @snippet, @category, @link, @responseUrl, @urlKey, @time, 
+                                @pubDate, @mimeType, @charSet, @contentLength, @domainName, @bprBoilerplateCharCount, @bprContentCharCount, @unseenContentCharCount,
+                                @rev, @fileName, @siteId) 
+                            ON CONFLICT DO NOTHING;", connection))
+                        {
+                            cmd.CommandTimeout = mCommandTimeout;
+                            WorkflowUtils.AssignParamsToCommand(cmd, 
+                                "guid", row["guid"],
+                                "hash", row["hash"],
+                                "title", row["title"],
+                                "description", row["description"],
+                                "snippet", row["snippet"],
+                                "category", row["category"],
+                                "link", row["link"],
+                                "responseUrl", row["responseUrl"],
+                                "urlkey", row["urlkey"],
+                                "time", row["time"],
+                                "pubDate", row["pubDate"],
+                                "mimeType", row["mimeType"],
+                                "charSet", row["charSet"],
+                                "contentLength", row["contentLength"],
+                                "domainName", row["domainName"],
+                                "bprBoilerplateCharCount", row["bprBoilerplateCharCount"],
+                                "bprContentCharCount", row["bprContentCharCount"],
+                                "unseenContentCharCount", row["unseenContentCharCount"],
+                                "rev", row["rev"],
+                                "fileName", row["fileName"],
+                                "siteId", row["siteId"] 
+                            );
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    // upsert text blocks
+                    foreach (DataRow row in dtTextBlocks.Rows)
+                    {
+                        // TODO: ignore duplicates?
+                        using (NpgsqlCommand cmd = new NpgsqlCommand(@"
+                            INSERT INTO ""TextBlocks"" (""docGuid"", ""hashCodes"")
+                            VALUES (@docGuid, @hashCodes)", connection))
+                        {
+                            cmd.CommandTimeout = mCommandTimeout;
+                            WorkflowUtils.AssignParamsToCommand(cmd,
+                                "docGuid", row["docGuid"],
+                                "hashCodes", row["hashCodes"]
+                            );
+                            cmd.ExecuteNonQuery();
+                        }
                     }
                 }
             }
