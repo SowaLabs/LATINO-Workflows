@@ -55,6 +55,12 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\DacqPipe\packages\Npgsql.2.2.7\lib\net40\Mono.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql, Version=2.2.7.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>..\DacqPipe\packages\Npgsql.2.2.7\lib\net40\Npgsql.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core">
@@ -122,10 +128,6 @@
     <ProjectReference Include="..\Latino\Latino.csproj">
       <Project>{5B86AAD5-3FEA-487C-A518-4F846AF09E18}</Project>
       <Name>Latino</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Npgsql\Npgsql\Npgsql.csproj">
-      <Project>{9D13B739-62B1-4190-B386-7A9547304EB3}</Project>
-      <Name>Npgsql</Name>
     </ProjectReference>
     <ProjectReference Include="..\SemWeb\SemWeb.csproj">
       <Project>{4570B82E-34F5-4630-A44A-A1E3D92FD18C}</Project>
@@ -196,6 +198,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
